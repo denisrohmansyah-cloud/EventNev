@@ -142,7 +142,7 @@ function getFooter_() {
   return Object.assign(defaults, values);
 }
 function saveFooter_(data) {
-  const allowed = ['brandName','brandTagline','description','partnerLogos','trainingTitle','trainingAddress','officeTitle','officeAddress','email','phone','whatsapp','popularPages','slogan','copyrightText'];
+  const allowed = ['brandName','brandTagline','description','partnerLogos','trainingTitle','trainingAddress','officeTitle','officeAddress','email','phone','whatsapp','popularPages','slogan','copyrightText','socialLinks'];
   allowed.forEach(key => {
     const value = String(data[key] || '').slice(0, ['description','trainingAddress','officeAddress','partnerLogos','popularPages'].includes(key) ? 4000 : 500);
     const existing = rows_('SiteSettings').find(r => String(r.key) === 'footer.'+key);
