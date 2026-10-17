@@ -8,7 +8,7 @@ const APP = { name: 'EventNev', version: '1.0.0' };
 const DEFAULT_SHEET_ID = '1y3nD14mwo93bRUKFENKwQLUxAtEQVLfYmyUBGQ5lAdE';
 const TABLES = {
   Users: ['id','name','email','passwordHash','salt','role','status','createdAt'],
-  Events: ['id','title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements','createdAt','updatedAt'],
+  Events: ['id','title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements','posterUrl','createdAt','updatedAt'],
   Registrations: ['id','eventId','userId','name','email','phone','institution','reason','status','adminNote','createdAt','updatedAt'],
   Trainers: ['id','name','roleTitle','expertise','experience','certifications','bio','photoUrl','sortOrder','visible','createdAt','updatedAt'],
   Announcements: ['id','title','body','status','createdAt'],
@@ -56,6 +56,10 @@ function setupDatabase() {
       sh.getRange(1,1,1,headers.length).setValues([headers]);
       sh.setFrozenRows(1);
       sh.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#d71920').setFontColor('#ffffff');
+    } else {
+      const existing=sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);
+      const missing=headers.filter(h=>!existing.includes(h));
+      if(missing.length){sh.getRange(1,sh.getLastColumn()+1,1,missing.length).setValues([missing]);sh.getRange(1,sh.getLastColumn()-missing.length+1,1,missing.length).setFontWeight('bold').setBackground('#d71920').setFontColor('#ffffff');}
     }
   });
   return 'Database EventNev siap. Pastikan Script Property ADMIN_EMAIL telah diatur.';
@@ -81,7 +85,7 @@ function route_(action, data, token) {
   if (action === 'adminRegistrations') { requireAdmin_(token); return {ok:true, registrations: rows_('Registrations')}; }
   if (action === 'adminUsers') { requireAdmin_(token); return {ok:true, users: rows_('Users').map(publicUser_)}; }
   if (action === 'adminUpdateRegistration') { requireAdmin_(token); return updateRegistration_(data); }
-  if (action === 'adminSaveEvent') { requireAdmin_(token); return saveRow_('Events', data, ['title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements']); }
+  if (action === 'adminSaveEvent') { requireAdmin_(token); return saveRow_('Events', data, ['title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements','posterUrl']); }
   if (action === 'adminDeleteEvent') { requireAdmin_(token); return deleteRow_('Events', data.id); }
   if (action === 'adminSaveTrainer') { requireAdmin_(token); return saveRow_('Trainers', data, ['name','roleTitle','expertise','experience','certifications','bio','photoUrl','sortOrder','visible']); }
   if (action === 'uploadTrainerPhotoChunk') { requireAdmin_(token); return uploadTrainerPhotoChunk_(data, token); }
