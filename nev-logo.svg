@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+<rect width="500" height="500" rx="250" fill="#08090b"/>
+<g fill="none" stroke="#e9f0ff" stroke-width="15" stroke-linejoin="round" stroke-linecap="round">
+<path d="M82 190 L181 88 L310 88 L417 190 L320 291 L185 291 Z"/>
+<path d="M181 88 L181 291 M181 88 L310 291 M310 88 L310 291"/>
+</g>
+<g fill="#f0131b"><circle cx="82" cy="190" r="15"/><circle cx="310" cy="88" r="15"/><circle cx="417" cy="190" r="15"/><circle cx="185" cy="291" r="15"/></g>
+<text x="250" y="382" fill="#f0131b" font-family="Arial,sans-serif" font-size="48" font-weight="800" text-anchor="middle" letter-spacing="-2">NETWORK</text>
+<text x="250" y="421" fill="#e9f0ff" font-family="Arial,sans-serif" font-size="29" font-weight="700" text-anchor="middle" letter-spacing="2">EVOLUTION</text>
+</svg>
