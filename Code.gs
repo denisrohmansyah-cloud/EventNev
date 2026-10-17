@@ -84,11 +84,45 @@ function route_(action, data, token) {
   if (action === 'adminSaveEvent') { requireAdmin_(token); return saveRow_('Events', data, ['title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements']); }
   if (action === 'adminDeleteEvent') { requireAdmin_(token); return deleteRow_('Events', data.id); }
   if (action === 'adminSaveTrainer') { requireAdmin_(token); return saveRow_('Trainers', data, ['name','roleTitle','expertise','experience','certifications','bio','photoUrl','sortOrder','visible']); }
+  if (action === 'uploadTrainerPhotoChunk') { requireAdmin_(token); return uploadTrainerPhotoChunk_(data, token); }
+  if (action === 'finalizeTrainerPhoto') { requireAdmin_(token); return finalizeTrainerPhoto_(data, token); }
   if (action === 'adminDeleteTrainer') { requireAdmin_(token); return deleteRow_('Trainers', data.id); }
   if (action === 'adminUpdateUser') { requireAdmin_(token); return updateUser_(data); }
   if (action === 'adminAnnouncement') { requireAdmin_(token); return saveRow_('Announcements', data, ['title','body','status']); }
   if (action === 'adminSaveFooter') { requireAdmin_(token); return saveFooter_(data); }
   throw new Error('Aksi tidak dikenal.');
+}
+
+
+function uploadTrainerPhotoChunk_(d, token) {
+  const id=String(d.uploadId||'').replace(/[^a-zA-Z0-9_-]/g,'');
+  const index=Number(d.index),total=Number(d.total),chunk=String(d.chunk||'');
+  if(!id||!Number.isInteger(index)||!Number.isInteger(total)||total<1||total>60||index<0||index>=total) throw new Error('Upload foto tidak valid.');
+  if(!chunk||chunk.length>24000||!/^[A-Za-z0-9+/=]+$/.test(chunk)) throw new Error('Data foto tidak valid.');
+  const cache=CacheService.getScriptCache(),prefix='trainerUpload:'+token+':'+id+':';
+  cache.put(prefix+'meta',JSON.stringify({total:total}),600);
+  cache.put(prefix+index,chunk,600);
+  return {ok:true,index:index};
+}
+function finalizeTrainerPhoto_(d, token) {
+  const id=String(d.uploadId||'').replace(/[^a-zA-Z0-9_-]/g,''),total=Number(d.total);
+  if(!id||!Number.isInteger(total)||total<1||total>60) throw new Error('Upload foto tidak valid.');
+  const cache=CacheService.getScriptCache(),prefix='trainerUpload:'+token+':'+id+':',meta=cache.get(prefix+'meta');
+  if(!meta||Number(JSON.parse(meta).total)!==total) throw new Error('Sesi upload berakhir. Silakan unggah foto kembali.');
+  const chunks=[];
+  for(let i=0;i<total;i++){const part=cache.get(prefix+i);if(!part)throw new Error('Data foto belum lengkap. Silakan coba lagi.');chunks.push(part);}
+  const base64=chunks.join('');
+  if(base64.length>1300000)throw new Error('Foto terkompresi terlalu besar.');
+  const mime=String(d.mimeType||'image/jpeg');
+  if(!['image/jpeg','image/png','image/webp'].includes(mime))throw new Error('Format foto tidak didukung.');
+  const blob=Utilities.newBlob(Utilities.base64Decode(base64),mime,clean_(d.name||'trainer.jpg',120));
+  const props=PropertiesService.getScriptProperties(),folderId=props.getProperty('TRAINER_PHOTO_FOLDER_ID');
+  let folder=folderId?DriveApp.getFolderById(folderId):DriveApp.createFolder('EventNev Trainer Photos');
+  if(!folderId)props.setProperty('TRAINER_PHOTO_FOLDER_ID',folder.getId());
+  const file=folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);
+  for(let i=0;i<total;i++)cache.remove(prefix+i);cache.remove(prefix+'meta');
+  return {ok:true,photoUrl:'https://drive.google.com/uc?export=view&id='+file.getId()};
 }
 
 function register_(d) {
