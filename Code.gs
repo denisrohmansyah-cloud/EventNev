@@ -94,34 +94,41 @@ function route_(action, data, token) {
 }
 
 
+function trainerPhotoFolder_() {
+  const props=PropertiesService.getScriptProperties(),folderId=props.getProperty('TRAINER_PHOTO_FOLDER_ID');
+  if(folderId) { try { return DriveApp.getFolderById(folderId); } catch(e) {} }
+  const folder=DriveApp.createFolder('EventNev Trainer Photos');
+  props.setProperty('TRAINER_PHOTO_FOLDER_ID',folder.getId());
+  return folder;
+}
 function uploadTrainerPhotoChunk_(d, token) {
   const id=String(d.uploadId||'').replace(/[^a-zA-Z0-9_-]/g,'');
   const index=Number(d.index),total=Number(d.total),chunk=String(d.chunk||'');
-  if(!id||!Number.isInteger(index)||!Number.isInteger(total)||total<1||total>60||index<0||index>=total) throw new Error('Upload foto tidak valid.');
-  if(!chunk||chunk.length>24000||!/^[A-Za-z0-9+/=]+$/.test(chunk)) throw new Error('Data foto tidak valid.');
-  const cache=CacheService.getScriptCache(),prefix='trainerUpload:'+token+':'+id+':';
-  cache.put(prefix+'meta',JSON.stringify({total:total}),600);
-  cache.put(prefix+index,chunk,600);
-  return {ok:true,index:index};
+  if(!id||!Number.isInteger(index)||!Number.isInteger(total)||total<1||total>100||index<0||index>=total) throw new Error('Metadata upload foto tidak valid.');
+  if(!chunk||chunk.length>1800||!/^[A-Za-z0-9+/=]+$/.test(chunk)) throw new Error('Potongan foto tidak valid.');
+  requireAdmin_(token);
+  const folder=trainerPhotoFolder_(), name='tmp_'+id+'_'+String(index).padStart(3,'0')+'.txt';
+  const old=folder.getFilesByName(name);while(old.hasNext())old.next().setTrashed(true);
+  folder.createFile(name,chunk,MimeType.PLAIN_TEXT);
+  return {ok:true,index:index,total:total};
 }
 function finalizeTrainerPhoto_(d, token) {
+  requireAdmin_(token);
   const id=String(d.uploadId||'').replace(/[^a-zA-Z0-9_-]/g,''),total=Number(d.total);
-  if(!id||!Number.isInteger(total)||total<1||total>60) throw new Error('Upload foto tidak valid.');
-  const cache=CacheService.getScriptCache(),prefix='trainerUpload:'+token+':'+id+':',meta=cache.get(prefix+'meta');
-  if(!meta||Number(JSON.parse(meta).total)!==total) throw new Error('Sesi upload berakhir. Silakan unggah foto kembali.');
-  const chunks=[];
-  for(let i=0;i<total;i++){const part=cache.get(prefix+i);if(!part)throw new Error('Data foto belum lengkap. Silakan coba lagi.');chunks.push(part);}
-  const base64=chunks.join('');
-  if(base64.length>1300000)throw new Error('Foto terkompresi terlalu besar.');
+  if(!id||!Number.isInteger(total)||total<1||total>100) throw new Error('Metadata upload foto tidak valid.');
+  const folder=trainerPhotoFolder_(), parts=[];
+  for(let i=0;i<total;i++){
+    const name='tmp_'+id+'_'+String(i).padStart(3,'0')+'.txt', files=folder.getFilesByName(name);
+    if(!files.hasNext()) throw new Error('Bagian foto '+(i+1)+' belum tersimpan. Coba unggah kembali.');
+    const file=files.next();parts.push(file.getBlob().getDataAsString());file.setTrashed(true);
+  }
+  const base64=parts.join('');
+  if(base64.length>900000) throw new Error('Foto terkompresi terlalu besar. Silakan pilih foto yang lebih kecil.');
   const mime=String(d.mimeType||'image/jpeg');
-  if(!['image/jpeg','image/png','image/webp'].includes(mime))throw new Error('Format foto tidak didukung.');
+  if(!['image/jpeg','image/png','image/webp'].includes(mime)) throw new Error('Format foto tidak didukung.');
   const blob=Utilities.newBlob(Utilities.base64Decode(base64),mime,clean_(d.name||'trainer.jpg',120));
-  const props=PropertiesService.getScriptProperties(),folderId=props.getProperty('TRAINER_PHOTO_FOLDER_ID');
-  let folder=folderId?DriveApp.getFolderById(folderId):DriveApp.createFolder('EventNev Trainer Photos');
-  if(!folderId)props.setProperty('TRAINER_PHOTO_FOLDER_ID',folder.getId());
   const file=folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);
-  for(let i=0;i<total;i++)cache.remove(prefix+i);cache.remove(prefix+'meta');
   return {ok:true,photoUrl:'https://drive.google.com/uc?export=view&id='+file.getId()};
 }
 
