@@ -26,8 +26,17 @@ function openModal(mode='login',extra={}){
 }
 function closeModal(){$('#modalBackdrop').classList.add('hidden');}
 function showMessage(msg,success=false){$('#modalMessage').textContent=msg;$('#modalMessage').className='form-message'+(success?' success':'');}
+function updateHeaderAuth(){
+ const dashboardBtn=$('#participantDashboard'),registerBtn=$('#registerOpen');
+ if(!dashboardBtn||!registerBtn)return;
+ const loggedIn=!!state.user;
+ dashboardBtn.classList.toggle('hidden',!loggedIn);
+ registerBtn.classList.toggle('hidden',loggedIn);
+ dashboardBtn.textContent=state.user?.role==='admin'?'Dashboard Admin ↗':'Dashboard Peserta ↗';
+}
 function switchView(view){
- state.view=view; $('.site-header').classList.toggle('hidden',view!=='home'); $('#main').classList.toggle('hidden',view!=='home'); $('.site-footer').classList.toggle('hidden',view!=='home'); $('#dashboard').classList.toggle('hidden',view!=='dashboard');
+ state.view=view;
+ updateHeaderAuth(); $('.site-header').classList.toggle('hidden',view!=='home'); $('#main').classList.toggle('hidden',view!=='home'); $('.site-footer').classList.toggle('hidden',view!=='home'); $('#dashboard').classList.toggle('hidden',view!=='dashboard');
  window.scrollTo({top:0,behavior:'smooth'});
  if(view==='dashboard'&&state.user){renderDashboardShell();loadDashboard().catch(e=>toast(e.message));}
 }
