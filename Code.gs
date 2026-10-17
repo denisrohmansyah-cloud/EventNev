@@ -10,7 +10,8 @@ const TABLES = {
   Events: ['id','title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements','createdAt','updatedAt'],
   Registrations: ['id','eventId','userId','name','email','phone','institution','reason','status','adminNote','createdAt','updatedAt'],
   Trainers: ['id','name','roleTitle','expertise','experience','certifications','bio','photoUrl','sortOrder','visible','createdAt','updatedAt'],
-  Announcements: ['id','title','body','status','createdAt']
+  Announcements: ['id','title','body','status','createdAt'],
+  SiteSettings: ['key','value','updatedAt']
 };
 
 function doGet(e) {
@@ -85,6 +86,7 @@ function route_(action, data, token) {
   if (action === 'adminDeleteTrainer') { requireAdmin_(token); return deleteRow_('Trainers', data.id); }
   if (action === 'adminUpdateUser') { requireAdmin_(token); return updateUser_(data); }
   if (action === 'adminAnnouncement') { requireAdmin_(token); return saveRow_('Announcements', data, ['title','body','status']); }
+  if (action === 'adminSaveFooter') { requireAdmin_(token); return saveFooter_(data); }
   throw new Error('Aksi tidak dikenal.');
 }
 
@@ -112,11 +114,42 @@ function login_(d) {
 }
 
 function publicData_() {
+  const allRegistrations = rows_('Registrations');
   const events = rows_('Events').filter(x => x.status === 'published').map(x => {
-    x.registeredCount = rows_('Registrations').filter(r => r.eventId===x.id && ['pending','approved'].includes(r.status)).length;
+    x.registeredCount = allRegistrations.filter(r => r.eventId===x.id && ['pending','approved'].includes(r.status)).length;
     return x;
   });
-  const registrations = rows_('Registrations');\n  const participantIds = new Set(registrations.filter(r=>['pending','approved','attended'].includes(String(r.status))).map(r=>String(r.userId)).filter(Boolean));\n  const alumniIds = new Set(registrations.filter(r=>String(r.status)==='attended').map(r=>String(r.userId)).filter(Boolean));\n  const stats = {events:events.length, participants:participantIds.size + 90, alumni:alumniIds.size + 60};\n  return {ok:true,events,trainers:rows_('Trainers').filter(t => t.visible===true || String(t.visible)==='true'),announcements:rows_('Announcements').filter(a=>a.status==='published'),stats};
+  const participantIds = new Set(allRegistrations.filter(r => ['pending','approved','attended'].includes(String(r.status))).map(r => String(r.userId)).filter(Boolean));
+  const alumniIds = new Set(allRegistrations.filter(r => String(r.status)==='attended').map(r => String(r.userId)).filter(Boolean));
+  const stats = {events:events.length, participants:participantIds.size + 90, alumni:alumniIds.size + 60};
+  return {ok:true,events,trainers:rows_('Trainers').filter(t => t.visible===true || String(t.visible)==='true'),announcements:rows_('Announcements').filter(a=>a.status==='published'),stats,footer:getFooter_()};
+}
+
+function getFooter_() {
+  const defaults = {
+    brandName:'Network Evolution', brandTagline:'Ora Konek Ora Kepenak',
+    description:'Komunitas untuk belajar, berbagi, dan berkembang di bidang teknologi.',
+    partnerLogos:'', trainingTitle:'Rumah Belajar Network Evolution',
+    trainingAddress:'Alamat lokasi training dapat diatur oleh admin.',
+    officeTitle:'Office & Exam Center Network Evolution',
+    officeAddress:'Alamat kantor dapat diatur oleh admin.',
+    email:'', phone:'', whatsapp:'',
+    popularPages:'Daftar Training|#programs\nJadwal Training|#programs\nHubungi Kami|#about\nNetwork Evolution|#about',
+    slogan:'ORA KONEK ORA KEPENAK', copyrightText:'Network Evolution. Built to connect.'
+  };
+  const values = {};
+  rows_('SiteSettings').forEach(r => { if (String(r.key).indexOf('footer.')===0) values[String(r.key).slice(7)] = String(r.value || ''); });
+  return Object.assign(defaults, values);
+}
+function saveFooter_(data) {
+  const allowed = ['brandName','brandTagline','description','partnerLogos','trainingTitle','trainingAddress','officeTitle','officeAddress','email','phone','whatsapp','popularPages','slogan','copyrightText'];
+  allowed.forEach(key => {
+    const value = String(data[key] || '').slice(0, ['description','trainingAddress','officeAddress','partnerLogos','popularPages'].includes(key) ? 4000 : 500);
+    const existing = rows_('SiteSettings').find(r => String(r.key) === 'footer.'+key);
+    if (existing) { existing.value=value; existing.updatedAt=now_(); replaceRow_('SiteSettings', existing); }
+    else append_('SiteSettings', {key:'footer.'+key, value, updatedAt:now_()});
+  });
+  return {ok:true, footer:getFooter_()};
 }
 
 function myDashboard_(user) {
