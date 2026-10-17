@@ -142,4 +142,6 @@ document.addEventListener('submit',async e=>{
  finally{if(submit){submit.disabled=false;submit.textContent=submit.dataset.old||'Simpan';}}
 });
 $('#year').textContent=new Date().getFullYear();
+// Render footer defaults immediately so social links remain visible even before the API responds.
+renderSiteFooter(footerDefaults());
 loadPublic();
