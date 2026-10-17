@@ -76,7 +76,7 @@ async function loadDashboard(){
   if(state.user.role==='admin'){const d=await api('adminSummary');state.adminSummary=d.summary;state.events=d.events||[];state.trainers=d.trainers||[];}
   else {const d=await api('myDashboard');state.myRegistrations=d.registrations||[];const pub=await api('publicData',{},false);state.events=pub.events||[];state.trainers=pub.trainers||[];}
   await renderDashboardPage(state.dashboardPage||'overview');
- }catch(e){if(/Sesi berakhir/.test(e.message)){state.user=null;state.token='';switchView('home');openModal('login');}else throw e;}
+ }catch(e){if(/^(Sesi berakhir|Token tidak valid|Akses ditolak|Silakan login kembali)\.?$/i.test(String(e.message||'').trim())){state.user=null;state.token='';switchView('home');openModal('login');}else throw e;}
 }
 async function renderDashboardPage(page){
  state.dashboardPage=page;renderDashboardShell();const content=$('#dashboardContent');
@@ -113,11 +113,11 @@ async function compressTrainerImage(file){
  const img=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Foto tidak dapat dibaca'));image.src=reader.result};reader.onerror=reject;reader.readAsDataURL(file)});
  const scale=Math.min(1,1600/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
  let quality=.82,blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));while(blob&&blob.size>700*1024&&quality>.42){quality-=.1;blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality))}
- if(!blob||blob.size>900*1024)throw new Error('Foto masih terlalu besar setelah dikompres');
+ if(!blob||blob.size>400*1024)throw new Error('Foto masih terlalu besar setelah dikompres. Pilih foto dengan resolusi lebih kecil.');
  return {name:file.name.replace(/\.[^.]+$/,'')+'.jpg',mimeType:'image/jpeg',base64:await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(String(rd.result).split(',')[1]);rd.onerror=reject;rd.readAsDataURL(blob)})};
 }
 async function uploadTrainerPhoto(photo){
- const uploadId='trainer-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),size=2500,total=Math.ceil(photo.base64.length/size);
+ const uploadId='trainer-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),size=18000,total=Math.ceil(photo.base64.length/size);
  for(let i=0;i<total;i++){await api('uploadTrainerPhotoChunk',{uploadId,index:i,total,chunk:photo.base64.slice(i*size,(i+1)*size)});const s=document.querySelector('#trainerPhotoStatus');if(s)s.textContent='Mengunggah foto '+Math.round((i+1)/total*100)+'%'}
  const result=await api('finalizeTrainerPhoto',{uploadId,total,name:photo.name,mimeType:photo.mimeType});if(!result.photoUrl)throw new Error('URL foto tidak diterima');return result.photoUrl;
 }
@@ -178,7 +178,7 @@ document.addEventListener('submit',async e=>{
    else{const r=await api('login',d,false);state.token=r.token;state.user=r.user;closeModal();toast('Berhasil masuk.');state.dashboardPage='overview';switchView('dashboard');}
   } else if(f.id==='applyForm'){const r=await api('apply',d);showMessage(r.message,true);toast('Pendaftaran berhasil dikirim.');setTimeout(()=>{closeModal();loadDashboard().catch(x=>toast(x.message));},800);}
   else if(f.id==='eventForm'){await api('adminSaveEvent',d);toast('Kegiatan berhasil disimpan.');await refreshAfterAdmin();}
-  else if(f.id==='trainerForm'){const file=document.querySelector('#trainerPhotoFile')?.files?.[0];if(file){if(file.size>5*1024*1024)throw new Error('Ukuran foto maksimal 5 MB.');if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Format harus JPG, PNG, atau WebP.');const status=document.querySelector('#trainerPhotoStatus');if(status)status.textContent='Mengompres foto…';const photo=await compressTrainerImage(file);d.photoUrl=await uploadTrainerPhoto(photo);if(status)status.textContent='Foto berhasil diunggah. Menyimpan profil…';}await api('adminSaveTrainer',d);toast('Profil trainer berhasil disimpan.');await refreshAfterAdmin();}
+  else if(f.id==='trainerForm'){if(!state.user||state.user.role!=='admin')throw new Error('Sesi admin tidak aktif. Silakan login kembali, lalu coba simpan lagi.');const file=document.querySelector('#trainerPhotoFile')?.files?.[0];if(file){if(file.size>5*1024*1024)throw new Error('Ukuran foto maksimal 5 MB.');if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Format harus JPG, PNG, atau WebP.');const status=document.querySelector('#trainerPhotoStatus');if(status)status.textContent='Mengompres foto…';const photo=await compressTrainerImage(file);d.photoUrl=await uploadTrainerPhoto(photo);if(status)status.textContent='Foto berhasil diunggah. Menyimpan profil…';}await api('adminSaveTrainer',d);toast('Profil trainer berhasil disimpan.');await refreshAfterAdmin();}
   else if(f.id==='announcementForm'){await api('adminAnnouncement',d);toast('Pengumuman tersimpan.');await loadDashboard();}
   else if(f.id==='footerForm'){await api('adminSaveFooter',d);state.footer=d;renderSiteFooter(d);toast('Footer berhasil diperbarui.');}
  }catch(x){if(f.id==='authForm'||f.id==='applyForm')showMessage(x.message);else {toast(x.message);if(f.id==='trainerForm'){const status=document.querySelector('#trainerPhotoStatus');if(status)status.textContent='Gagal: '+x.message;}}}
