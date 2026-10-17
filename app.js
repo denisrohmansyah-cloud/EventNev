@@ -145,3 +145,15 @@ $('#year').textContent=new Date().getFullYear();
 // Render footer defaults immediately so social links remain visible even before the API responds.
 renderSiteFooter(footerDefaults());
 loadPublic();
+
+// Refresh dashboard data automatically while the user is viewing Ringkasan.
+let dashboardRefreshInFlight = false;
+async function refreshDashboardSilently(){
+ if(document.hidden || state.view!=='dashboard' || !state.user || state.dashboardPage!=='overview' || dashboardRefreshInFlight) return;
+ dashboardRefreshInFlight=true;
+ try{await loadDashboard();}catch(e){console.info('Auto refresh dashboard:',e.message);}
+ finally{dashboardRefreshInFlight=false;}
+}
+setInterval(refreshDashboardSilently,30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDashboardSilently();});
+window.addEventListener('focus',refreshDashboardSilently);
