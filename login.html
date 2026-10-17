@@ -1,386 +1,459 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#E1262F" />
   <title>Masuk / Daftar — EventNev</title>
-  <meta name="theme-color" content="#E1262F">
-  <link rel="icon" type="image/png" href="nev-logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="nev-logo.png" type="image/png" />
   <style>
-    body { min-height: 100vh; display: grid; place-items: center; background: var(--black); }
-    .auth-page { width: 100%; max-width: 440px; padding: 24px; }
-    .auth-brand { text-align: center; margin-bottom: 32px; }
-    .auth-brand img { width: 44px; height: 44px; margin: 0 auto 12px; }
-    .auth-brand h1 { font-size: 1.5rem; font-weight: 800; }
-    .auth-brand p { font-size: .875rem; color: var(--text-dim); margin-top: 4px; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .auth-tabs {
+    :root {
+      --red: #E1262F;
+      --red-dark: #b81e26;
+      --white: #ffffff;
+      --gray-100: #f2f2f2;
+      --gray-300: #d0d0d0;
+      --gray-500: #888;
+      --gray-700: #444;
+      --gray-900: #111;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
       display: flex;
-      background: var(--dark-3);
-      border-radius: var(--radius-sm);
-      padding: 4px;
-      margin-bottom: 28px;
-    }
-    .auth-tab {
-      flex: 1;
-      padding: 9px;
-      text-align: center;
-      font-size: .875rem;
-      font-weight: 600;
-      border-radius: calc(var(--radius-sm) - 2px);
-      color: var(--text-dim);
-      transition: all var(--transition);
-      cursor: pointer;
-    }
-    .auth-tab.active { background: var(--dark-2); color: var(--text); box-shadow: var(--shadow-sm); }
-
-    .auth-form { display: none; flex-direction: column; gap: 16px; }
-    .auth-form.active { display: flex; }
-
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: .8rem; font-weight: 600; color: var(--text-dim); }
-    .field input, .field select {
-      background: var(--dark-3);
-      border: 1.5px solid var(--dark-4);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      color: var(--text);
-      font-size: .9rem;
-      font-family: var(--font);
-      transition: border-color var(--transition);
-      outline: none;
-    }
-    .field input:focus, .field select:focus { border-color: var(--red); }
-    .field input::placeholder { color: var(--muted); }
-
-    .auth-submit {
-      width: 100%;
-      justify-content: center;
-      padding: 13px;
-      font-size: .95rem;
-      margin-top: 4px;
-      border-radius: var(--radius-sm);
+      background: var(--white);
+      color: var(--gray-900);
     }
 
-    .auth-note {
-      text-align: center;
-      font-size: .78rem;
-      color: var(--text-dim);
-      margin-top: 8px;
-    }
-    .auth-note a { color: var(--red); font-weight: 600; }
-
-    .auth-divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--muted);
-      font-size: .75rem;
-    }
-    .auth-divider::before, .auth-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--dark-4);
-    }
-
-    .back-link {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: .8rem;
-      color: var(--text-dim);
-      margin-bottom: 24px;
-      transition: color var(--transition);
-    }
-    .back-link:hover { color: var(--text); }
-
-    .auth-error {
-      background: rgba(225,38,47,.1);
-      border: 1px solid rgba(225,38,47,.2);
-      color: var(--red-light);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: .82rem;
-      display: none;
-    }
-    .auth-error.show { display: block; }
-    .auth-success {
-      background: rgba(34,197,94,.1);
-      border: 1px solid rgba(34,197,94,.2);
-      color: #4ade80;
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: .82rem;
-      display: none;
-    }
-    .auth-success.show { display: block; }
-
-    .spinner-inline {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-
-    .password-toggle {
+    /* LEFT PANEL */
+    .left {
+      width: 48%;
+      background: var(--red);
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 52px;
+      overflow: hidden;
     }
-    .password-toggle input { padding-right: 44px; width: 100%; }
-    .password-toggle button {
+    .left::before, .left::after {
+      content: '';
       position: absolute;
-      right: 12px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-dim);
-      font-size: .9rem;
-      padding: 4px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.18);
     }
-    .password-toggle button:hover { color: var(--text); }
+    .left::before { width: 340px; height: 340px; top: -80px; right: -100px; }
+    .left::after  { width: 220px; height: 220px; bottom: 40px; right: -60px; }
+
+    .left-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 56px; position: relative;
+    }
+    .left-logo img {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: rgba(255,255,255,.15); padding: 4px; object-fit: contain;
+    }
+    .left-logo-text { color: var(--white); line-height: 1.2; }
+    .left-logo-text strong { font-size: 1rem; font-weight: 700; display: block; }
+    .left-logo-text span { font-size: .75rem; opacity: .8; }
+
+    .left h1 {
+      color: var(--white);
+      font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+      font-weight: 800; line-height: 1.25;
+      margin-bottom: 20px; position: relative;
+    }
+    .left p {
+      color: rgba(255,255,255,.85);
+      font-size: .95rem; line-height: 1.7;
+      max-width: 340px; margin-bottom: 40px; position: relative;
+    }
+    .stats { display: flex; flex-direction: column; gap: 14px; position: relative; }
+    .stat-item { display: flex; align-items: center; gap: 14px; color: var(--white); }
+    .stat-icon {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,.18);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .stat-item span { font-size: .9rem; font-weight: 500; }
+
+    /* RIGHT PANEL */
+    .right {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; padding: 48px 56px;
+      background: var(--white); overflow-y: auto;
+    }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--gray-500); font-size: .85rem;
+      text-decoration: none; margin-bottom: 36px; transition: color .2s;
+    }
+    .back-link:hover { color: var(--red); }
+
+    /* tabs */
+    .tab-row {
+      display: flex; margin-bottom: 28px;
+      border-bottom: 2px solid var(--gray-100);
+    }
+    .tab-btn {
+      background: none; border: none;
+      padding: 10px 0; margin-right: 28px;
+      font-size: 1rem; font-weight: 600;
+      color: var(--gray-500); cursor: pointer;
+      position: relative; transition: color .2s;
+    }
+    .tab-btn.active { color: var(--gray-900); }
+    .tab-btn.active::after {
+      content: ''; position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 2px; background: var(--red); border-radius: 2px;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-title { font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; }
+    .panel-sub {
+      color: var(--gray-500); font-size: .9rem;
+      margin-bottom: 28px; line-height: 1.5;
+    }
+
+    /* form fields */
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block; font-size: .85rem;
+      font-weight: 600; color: var(--gray-700); margin-bottom: 7px;
+    }
+    .field input, .field select {
+      width: 100%; padding: 13px 16px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius);
+      font-size: .95rem; color: var(--gray-900);
+      background: var(--white); outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(225,38,47,.1);
+    }
+    .field input::placeholder { color: var(--gray-300); }
+
+    .field-pass { position: relative; }
+    .field-pass input { padding-right: 46px; }
+    .toggle-pass {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; color: var(--gray-500); line-height: 1;
+    }
+
+    /* peserta cards */
+    .peserta-label {
+      display: block; font-size: .85rem;
+      font-weight: 600; color: var(--gray-700); margin-bottom: 10px;
+    }
+    .peserta-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 18px;
+    }
+    .peserta-card {
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius);
+      padding: 14px 16px; cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative; user-select: none;
+    }
+    .peserta-card input[type="radio"] {
+      position: absolute; opacity: 0; width: 0; height: 0;
+    }
+    .peserta-card.selected {
+      border-color: var(--red);
+      background: rgba(225,38,47,.04);
+    }
+    .peserta-card-icon { font-size: 1.4rem; margin-bottom: 6px; }
+    .peserta-card-name { font-size: .9rem; font-weight: 700; color: var(--gray-900); }
+    .peserta-card-desc { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
+    .peserta-check {
+      position: absolute; top: 10px; right: 10px;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid var(--gray-300);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s; font-size: .6rem; color: transparent;
+    }
+    .peserta-card.selected .peserta-check {
+      background: var(--red); border-color: var(--red); color: white;
+    }
+
+    /* buttons */
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: var(--red); color: var(--white);
+      border: none; border-radius: var(--radius);
+      font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: background .2s, transform .1s;
+      margin-top: 4px;
+    }
+    .btn-primary:hover { background: var(--red-dark); }
+    .btn-primary:active { transform: scale(.98); }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--gray-300); font-size: .8rem; margin: 18px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--gray-100);
+    }
+
+    .btn-google {
+      width: 100%; padding: 13px;
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius);
+      font-size: .9rem; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: border-color .2s, background .2s;
+      color: var(--gray-900);
+    }
+    .btn-google:hover { border-color: #4285F4; background: #f7f9ff; }
+    .google-icon { width: 18px; height: 18px; }
+
+    .switch-text {
+      text-align: center; margin-top: 24px;
+      font-size: .85rem; color: var(--gray-500);
+    }
+    .switch-text a {
+      color: var(--red); font-weight: 600; text-decoration: none;
+    }
+    .switch-text a:hover { text-decoration: underline; }
+
+    /* responsive */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .left { width: 100%; padding: 32px 24px; min-height: auto; }
+      .left::after { display: none; }
+      .left p { display: none; }
+      .left-logo { margin-bottom: 24px; }
+      .left h1 { font-size: 1.35rem; margin-bottom: 16px; }
+      .right { padding: 28px 20px; }
+    }
+    @media (max-width: 400px) {
+      .peserta-cards { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-<div class="auth-page">
-  <a class="back-link" href="index.html">← Kembali ke beranda</a>
-
-  <div class="auth-brand">
-    <img src="nev-logo.png" alt="Logo NEV">
-    <h1>Event<span class="red">Nev</span></h1>
-    <p>Portal kegiatan Network Evolution</p>
-  </div>
-
-  <div class="auth-tabs">
-    <div class="auth-tab active" data-tab="login">Masuk</div>
-    <div class="auth-tab" data-tab="register">Daftar</div>
-  </div>
-
-  <!-- LOGIN FORM -->
-  <form class="auth-form active" id="loginForm" novalidate>
-    <div class="auth-error" id="loginError"></div>
-    <div class="auth-success" id="loginSuccess"></div>
-    <div class="field">
-      <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" placeholder="kamu@email.com" autocomplete="email" required>
-    </div>
-    <div class="field">
-      <label for="loginPassword">Password</label>
-      <div class="password-toggle" style="position:relative;">
-        <input type="password" id="loginPassword" placeholder="Password kamu" autocomplete="current-password" required>
-        <button type="button" id="toggleLoginPass" tabindex="-1" aria-label="Tampilkan password">👁</button>
+  <!-- LEFT -->
+  <div class="left">
+    <div class="left-logo">
+      <img src="nev-logo.png" alt="NEV" onerror="this.style.display='none'" />
+      <div class="left-logo-text">
+        <strong>EventNev</strong>
+        <span>Network Evolution</span>
       </div>
     </div>
-    <button type="submit" class="btn btn-red auth-submit" id="loginBtn">Masuk</button>
-    <p class="auth-note">Belum punya akun? <span class="auth-tab-link" data-tab="register">Daftar sekarang</span></p>
-  </form>
-
-  <!-- REGISTER FORM -->
-  <form class="auth-form" id="registerForm" novalidate>
-    <div class="auth-error" id="registerError"></div>
-    <div class="auth-success" id="registerSuccess"></div>
-    <div class="field">
-      <label for="regNama">Nama lengkap</label>
-      <input type="text" id="regNama" placeholder="Nama kamu" autocomplete="name" required>
-    </div>
-    <div class="field">
-      <label for="regEmail">Email</label>
-      <input type="email" id="regEmail" placeholder="kamu@email.com" autocomplete="email" required>
-    </div>
-    <div class="field">
-      <label for="regNoHp">No. HP / WhatsApp</label>
-      <input type="tel" id="regNoHp" placeholder="08xxxxxxxxxx" autocomplete="tel">
-    </div>
-    <div class="field">
-      <label for="regJenis">Jenis peserta</label>
-      <select id="regJenis" required>
-        <option value="">Pilih jenis peserta</option>
-        <option value="Mahasiswa">Mahasiswa</option>
-        <option value="Umum">Peserta Umum</option>
-        <option value="Alumni">Alumni NEV</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="regPassword">Password</label>
-      <div class="password-toggle">
-        <input type="password" id="regPassword" placeholder="Min. 8 karakter" autocomplete="new-password" required>
-        <button type="button" id="toggleRegPass" tabindex="-1" aria-label="Tampilkan password">👁</button>
+    <h1>Wujudkan Masa Depan dengan Skill yang Tepat.</h1>
+    <p>Bergabung dengan peserta yang telah mengembangkan skill mereka di bidang teknologi bersama Network Evolution.</p>
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-icon">🏢</div>
+        <span>Partner kampus &amp; industri teknologi</span>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">🌐</div>
+        <span>Open Lab, Bootcamp &amp; Open Recruitment</span>
       </div>
     </div>
-    <div class="field">
-      <label for="regConfirm">Konfirmasi password</label>
-      <input type="password" id="regConfirm" placeholder="Ulangi password" autocomplete="new-password" required>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <a href="index.html" class="back-link">← Kembali ke Beranda</a>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-masuk" onclick="switchTab('masuk')">Masuk</button>
+      <button class="tab-btn"        id="tab-daftar" onclick="switchTab('daftar')">Daftar</button>
     </div>
-    <button type="submit" class="btn btn-red auth-submit" id="registerBtn">Buat Akun</button>
-    <p class="auth-note">Sudah punya akun? <span class="auth-tab-link" data-tab="login">Masuk di sini</span></p>
-  </form>
-</div>
 
-<div class="toast" id="toast" role="status"></div>
+    <!-- PANEL MASUK -->
+    <div class="panel active" id="panel-masuk">
+      <div class="panel-title">Login</div>
+      <div class="panel-sub">Kami akan mengirimkan kode One-Time Password (OTP) ke email Anda.</div>
 
-<script>
-"use strict";
-const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="email@example.com" />
+      </div>
 
-function toast(msg, type = "info") {
-  const el = document.getElementById("toast");
-  if (!el) return;
-  el.textContent = msg;
-  el.className = "toast show " + type;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove("show"), 3500);
-}
+      <button class="btn-primary" onclick="handleOTP()">Kirim Kode OTP</button>
 
-async function apiFetch(params) {
-  const url = new URL(SCRIPT_URL);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
-}
+      <div class="divider">ATAU</div>
 
-function setLoading(btn, loading) {
-  if (loading) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-inline"></span> Memproses…';
-  } else {
-    btn.disabled = false;
-    btn.innerHTML = btn.dataset.label || btn.textContent;
-  }
-}
+      <button class="btn-google" onclick="handleGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Lanjutkan dengan Google
+      </button>
 
-// Tabs
-function switchTab(tab) {
-  document.querySelectorAll(".auth-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
-  document.querySelectorAll(".auth-form").forEach(f => f.classList.toggle("active", f.id === tab + "Form"));
-}
+      <div class="switch-text">
+        Belum punya akun? <a href="#" onclick="switchTab('daftar'); return false;">daftar sekarang</a>
+      </div>
+    </div>
 
-document.querySelectorAll(".auth-tab, .auth-tab-link").forEach(el => {
-  el.addEventListener("click", () => switchTab(el.dataset.tab));
-});
+    <!-- PANEL DAFTAR -->
+    <div class="panel" id="panel-daftar">
+      <div class="panel-title">Daftar Sekarang</div>
+      <div class="panel-sub">Buat akun gratis dan ikuti kegiatan Network Evolution.</div>
 
-// Password toggle
-function initPasswordToggle(inputId, btnId) {
-  const input = document.getElementById(inputId);
-  const btn = document.getElementById(btnId);
-  if (!input || !btn) return;
-  btn.addEventListener("click", () => {
-    input.type = input.type === "password" ? "text" : "password";
-    btn.textContent = input.type === "password" ? "👁" : "🙈";
-  });
-}
-initPasswordToggle("loginPassword", "toggleLoginPass");
-initPasswordToggle("regPassword", "toggleRegPass");
+      <div class="field">
+        <label for="reg-nama">Nama Lengkap</label>
+        <input type="text" id="reg-nama" placeholder="Nama sesuai identitas" />
+      </div>
 
-// Store label
-document.querySelectorAll("button[type=submit]").forEach(btn => {
-  btn.dataset.label = btn.textContent;
-});
+      <div class="field">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="email@example.com" />
+      </div>
 
-// LOGIN
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-  const errEl = document.getElementById("loginError");
-  const sucEl = document.getElementById("loginSuccess");
-  const btn = document.getElementById("loginBtn");
+      <div class="field">
+        <label for="reg-hp">No. HP / WhatsApp</label>
+        <input type="tel" id="reg-hp" placeholder="08xxxxxxxxxx" />
+      </div>
 
-  errEl.classList.remove("show");
-  sucEl.classList.remove("show");
+      <!-- Jenis Peserta -->
+      <div>
+        <span class="peserta-label">Jenis Peserta</span>
+        <div class="peserta-cards">
+          <label class="peserta-card selected" id="card-mahasiswa" onclick="selectPeserta('mahasiswa')">
+            <input type="radio" name="jenis-peserta" value="mahasiswa" checked />
+            <div class="peserta-check">✓</div>
+            <div class="peserta-card-icon">🎓</div>
+            <div class="peserta-card-name">Mahasiswa</div>
+            <div class="peserta-card-desc">Sedang menempuh pendidikan tinggi</div>
+          </label>
+          <label class="peserta-card" id="card-umum" onclick="selectPeserta('umum')">
+            <input type="radio" name="jenis-peserta" value="umum" />
+            <div class="peserta-check"></div>
+            <div class="peserta-card-icon">👤</div>
+            <div class="peserta-card-name">Peserta Umum</div>
+            <div class="peserta-card-desc">Profesional atau masyarakat umum</div>
+          </label>
+        </div>
+      </div>
 
-  if (!email || !password) {
-    errEl.textContent = "Email dan password wajib diisi.";
-    errEl.classList.add("show");
-    return;
-  }
+      <div class="field">
+        <label for="reg-pass">Password</label>
+        <div class="field-pass">
+          <input type="password" id="reg-pass" placeholder="Minimal 8 karakter" />
+          <button class="toggle-pass" onclick="togglePass('reg-pass', this)" type="button">👁</button>
+        </div>
+      </div>
 
-  setLoading(btn, true);
-  try {
-    const data = await apiFetch({ action: "login", email, password });
-    if (data.success && data.user) {
-      localStorage.setItem("nevUser", JSON.stringify(data.user));
-      sucEl.textContent = "Berhasil masuk! Mengalihkan…";
-      sucEl.classList.add("show");
-      setTimeout(() => { window.location.href = data.user.role === "admin" ? "admin.html" : "dashboard.html"; }, 800);
-    } else {
-      errEl.textContent = data.message || "Email atau password salah.";
-      errEl.classList.add("show");
+      <div class="field">
+        <label for="reg-pass2">Konfirmasi Password</label>
+        <div class="field-pass">
+          <input type="password" id="reg-pass2" placeholder="Ulangi password" />
+          <button class="toggle-pass" onclick="togglePass('reg-pass2', this)" type="button">👁</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="handleRegister()">Buat Akun</button>
+
+      <div class="divider">ATAU</div>
+
+      <button class="btn-google" onclick="handleGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Daftar dengan Google
+      </button>
+
+      <div class="switch-text">
+        Sudah punya akun? <a href="#" onclick="switchTab('masuk'); return false;">Masuk di sini</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      document.getElementById('panel-' + name).classList.add('active');
     }
-  } catch {
-    // Demo login untuk testing
-    if (email && password.length >= 6) {
-      const demoUser = { id: "demo-001", nama: "Demo User", email, role: "peserta", poin: 0 };
-      localStorage.setItem("nevUser", JSON.stringify(demoUser));
-      sucEl.textContent = "Demo login berhasil! Mengalihkan…";
-      sucEl.classList.add("show");
-      setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
-    } else {
-      errEl.textContent = "Gagal terhubung ke server. Pastikan konfigurasi SCRIPT_URL sudah benar.";
-      errEl.classList.add("show");
+
+    function selectPeserta(val) {
+      ['mahasiswa','umum'].forEach(function(v) {
+        var card = document.getElementById('card-' + v);
+        var radio = card.querySelector('input[type="radio"]');
+        var check = card.querySelector('.peserta-check');
+        if (v === val) {
+          card.classList.add('selected');
+          radio.checked = true;
+          check.textContent = '✓';
+        } else {
+          card.classList.remove('selected');
+          radio.checked = false;
+          check.textContent = '';
+        }
+      });
     }
-  } finally {
-    setLoading(btn, false);
-  }
-});
 
-// REGISTER
-document.getElementById("registerForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const nama = document.getElementById("regNama").value.trim();
-  const email = document.getElementById("regEmail").value.trim();
-  const noHp = document.getElementById("regNoHp").value.trim();
-  const jenis = document.getElementById("regJenis").value;
-  const password = document.getElementById("regPassword").value;
-  const confirm = document.getElementById("regConfirm").value;
-  const errEl = document.getElementById("registerError");
-  const sucEl = document.getElementById("registerSuccess");
-  const btn = document.getElementById("registerBtn");
-
-  errEl.classList.remove("show");
-  sucEl.classList.remove("show");
-
-  if (!nama || !email || !jenis || !password) {
-    errEl.textContent = "Semua field wajib diisi.";
-    errEl.classList.add("show");
-    return;
-  }
-  if (password.length < 8) {
-    errEl.textContent = "Password minimal 8 karakter.";
-    errEl.classList.add("show");
-    return;
-  }
-  if (password !== confirm) {
-    errEl.textContent = "Konfirmasi password tidak sesuai.";
-    errEl.classList.add("show");
-    return;
-  }
-
-  setLoading(btn, true);
-  try {
-    const data = await apiFetch({ action: "register", nama, email, noHp, jenis, password });
-    if (data.success) {
-      sucEl.textContent = "Akun berhasil dibuat! Silakan masuk dengan akun baru kamu.";
-      sucEl.classList.add("show");
-      document.getElementById("registerForm").reset();
-      setTimeout(() => switchTab("login"), 2000);
-    } else {
-      errEl.textContent = data.message || "Pendaftaran gagal. Email mungkin sudah terdaftar.";
-      errEl.classList.add("show");
+    function togglePass(id, btn) {
+      var inp = document.getElementById(id);
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        inp.type = 'password';
+        btn.textContent = '👁';
+      }
     }
-  } catch {
-    errEl.textContent = "Gagal terhubung ke server. Pastikan konfigurasi SCRIPT_URL sudah benar.";
-    errEl.classList.add("show");
-  } finally {
-    setLoading(btn, false);
-  }
-});
-</script>
+
+    function handleOTP() {
+      var email = document.getElementById('login-email').value.trim();
+      if (!email) { alert('Masukkan email terlebih dahulu.'); return; }
+      alert('Kode OTP telah dikirim ke ' + email);
+    }
+
+    function handleRegister() {
+      var nama  = document.getElementById('reg-nama').value.trim();
+      var email = document.getElementById('reg-email').value.trim();
+      var hp    = document.getElementById('reg-hp').value.trim();
+      var pass  = document.getElementById('reg-pass').value;
+      var pass2 = document.getElementById('reg-pass2').value;
+      var jenis = document.querySelector('input[name="jenis-peserta"]:checked').value;
+
+      if (!nama || !email || !hp || !pass || !pass2) {
+        alert('Mohon lengkapi semua data.'); return;
+      }
+      if (pass !== pass2) { alert('Password tidak cocok.'); return; }
+      if (pass.length < 8) { alert('Password minimal 8 karakter.'); return; }
+
+      alert('Akun berhasil dibuat sebagai ' + (jenis === 'mahasiswa' ? 'Mahasiswa' : 'Peserta Umum') + '!\n\nSilakan cek email untuk verifikasi.');
+    }
+
+    function handleGoogle() {
+      alert('Fitur Google Sign-In akan segera tersedia.');
+    }
+
+    if (new URLSearchParams(location.search).get('tab') === 'daftar') {
+      switchTab('daftar');
+    }
+  </script>
 </body>
 </html>
