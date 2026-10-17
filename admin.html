@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Portal — EventNev</title>
+  <meta name="theme-color" content="#E1262F">
+  <link rel="icon" type="image/png" href="nev-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    .admin-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .admin-table th {
+      background: var(--dark-3);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .admin-table td { padding: 12px 14px; border-bottom: 1px solid var(--dark-4); vertical-align: middle; }
+    .admin-table tr:hover td { background: var(--dark-3); }
+    .admin-table th:first-child, .admin-table td:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .admin-table th:last-child, .admin-table td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+    .table-wrap {
+      background: var(--dark-2);
+      border: 1px solid var(--dark-4);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    .admin-select {
+      background: var(--dark-3);
+      border: 1.5px solid var(--dark-4);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      color: var(--text);
+      font-size: .78rem;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    .admin-select:focus { outline: none; border-color: var(--red); }
+
+    .admin-btn-sm {
+      padding: 6px 12px;
+      font-size: .75rem;
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+
+<header class="topbar" id="topbar">
+  <a class="brand" href="index.html">
+    <img class="brand-logo" src="nev-logo.png" alt="Logo NEV" width="30" height="30">
+    <span>Event<span class="red">Nev</span><small>Admin Portal</small></span>
+  </a>
+  <nav>
+    <a href="index.html">← Portal Publik</a>
+  </nav>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" id="logoutBtn">Keluar</button>
+  </div>
+</header>
+
+<main class="dashboard-main">
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-profile" id="sidebarProfile">
+      <div class="sidebar-avatar" style="background:var(--red);">A</div>
+      <div class="sidebar-info">
+        <div class="sidebar-name" id="sidebarName">Admin</div>
+        <div class="sidebar-role">Administrator</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-view="stats"><span>📊</span> Dashboard</button>
+      <button class="sidebar-item" data-view="events"><span>📅</span> Kelola Event</button>
+      <button class="sidebar-item" data-view="applications"><span>📋</span> Pendaftaran</button>
+      <button class="sidebar-item" data-view="users"><span>👥</span> Peserta</button>
+      <button class="sidebar-item" data-view="trainers"><span>🎓</span> Trainer</button>
+    </nav>
+  </aside>
+
+  <div class="dashboard-content" id="adminContent">
+    <div class="db-loading">Memuat admin panel…</div>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="admin.js?v=20261017"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Peserta — EventNev</title>
+  <meta name="theme-color" content="#E1262F">
+  <link rel="icon" type="image/png" href="nev-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dashboard-body">
+
+<header class="topbar" id="topbar">
+  <a class="brand" href="index.html" aria-label="Kembali ke beranda">
+    <img class="brand-logo" src="nev-logo.png" alt="Logo NEV" width="30" height="30">
+    <span>Event<span class="red">Nev</span><small>NEV • LEARN • CONNECT • GROW</small></span>
+  </a>
+  <nav aria-label="Navigasi dashboard">
+    <a href="index.html">Beranda</a>
+    <a href="index.html#kegiatan">Event</a>
+  </nav>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" id="scanAbsenBtn">📷 Scan QR</button>
+    <button class="btn btn-outline" id="logoutBtn">Keluar</button>
+  </div>
+</header>
+
+<main class="dashboard-main">
+  <!-- Sidebar -->
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-profile" id="sidebarProfile">
+      <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+      <div class="sidebar-info">
+        <div class="sidebar-name" id="sidebarName">—</div>
+        <div class="sidebar-role" id="sidebarRole">Peserta</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-view="overview">
+        <span>📊</span> Ringkasan
+      </button>
+      <button class="sidebar-item" data-view="applications">
+        <span>📋</span> Pendaftaran Saya
+      </button>
+      <button class="sidebar-item" data-view="certificates">
+        <span>🏆</span> Sertifikat
+      </button>
+      <button class="sidebar-item" data-view="profile">
+        <span>👤</span> Profil Saya
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Content -->
+  <div class="dashboard-content" id="dashboardContent">
+    <div class="db-loading">Memuat dashboard…</div>
+  </div>
+</main>
+
+<!-- Scanner -->
+<div class="scanner-overlay" id="scannerOverlay" hidden>
+  <p style="color:#fff; font-weight:600; font-size:.9rem;">Arahkan kamera ke QR Code Absensi</p>
+  <video id="scannerVideo" playsinline autoplay muted></video>
+  <canvas id="scannerCanvas" hidden></canvas>
+  <p id="scannerResult" style="color:#fff; font-size:.85rem; text-align:center; max-width:300px; padding:0 16px;"></p>
+  <button class="btn btn-outline scanner-close" id="closeScannerBtn">Tutup Scanner</button>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="scanner.js"></script>
+<script src="dashboard.js?v=20261017"></script>
+</body>
+</html>
