@@ -116,7 +116,7 @@ function publicData_() {
     x.registeredCount = rows_('Registrations').filter(r => r.eventId===x.id && ['pending','approved'].includes(r.status)).length;
     return x;
   });
-  const registrations = rows_('Registrations');\n  const participantIds = new Set(registrations.filter(r=>['pending','approved','attended'].includes(String(r.status))).map(r=>String(r.userId)).filter(Boolean));\n  const alumniIds = new Set(registrations.filter(r=>String(r.status)==='attended').map(r=>String(r.userId)).filter(Boolean));\n  const stats = {events:events.length, participants:participantIds.size, alumni:alumniIds.size};\n  return {ok:true,events,trainers:rows_('Trainers').filter(t => t.visible===true || String(t.visible)==='true'),announcements:rows_('Announcements').filter(a=>a.status==='published'),stats};
+  const registrations = rows_('Registrations');\n  const participantIds = new Set(registrations.filter(r=>['pending','approved','attended'].includes(String(r.status))).map(r=>String(r.userId)).filter(Boolean));\n  const alumniIds = new Set(registrations.filter(r=>String(r.status)==='attended').map(r=>String(r.userId)).filter(Boolean));\n  const stats = {events:events.length, participants:participantIds.size + 90, alumni:alumniIds.size + 60};\n  return {ok:true,events,trainers:rows_('Trainers').filter(t => t.visible===true || String(t.visible)==='true'),announcements:rows_('Announcements').filter(a=>a.status==='published'),stats};
 }
 
 function myDashboard_(user) {
