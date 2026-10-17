@@ -127,7 +127,7 @@ function publicData_() {
 
 function getFooter_() {
   const defaults = {
-    brandName:'Network Evolution', brandTagline:'Ora Konek Ora Kepenak',
+    brandName:'Network Evolution', brandTagline:'Ora Konek Ora Kepenak', socialLinks:'Instagram|@nevtelkom_tup|https://www.instagram.com/nevtelkom_tup\nGitHub|NEVPurwokerto-Repo|https://github.com/NEVPurwokerto-Repo\nLinkedIn|Network Evolution Laboratory|https://www.linkedin.com/company/network-evolution-laboratory/home/\nYouTube|Network Evolution TUP|https://www.youtube.com/@networkevolutionittp9849',
     description:'Komunitas untuk belajar, berbagi, dan berkembang di bidang teknologi.',
     partnerLogos:'', trainingTitle:'Rumah Belajar Network Evolution',
     trainingAddress:'Alamat lokasi training dapat diatur oleh admin.',
