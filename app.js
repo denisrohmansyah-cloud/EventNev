@@ -1,5 +1,5 @@
 /* EventNev frontend. Configure API_URL after deploying Code.gs. */
-const API_URL = ''; // Paste the deployed Apps Script Web App URL ending in /exec.
+const API_URL = 'https://script.google.com/macros/s/AKfycbybwMPI1cbVV8pGJvjnC3Uq_kg6llnzoCX5XoyJhbXc8nFu8YjNoItf65Ywojtr6KW1/exec'; // EventNev Google Apps Script Web App
 const state = { user:null, token:'', events:[], trainers:[], announcements:[], footer:{}, filter:'Semua', modalMode:'login', adminSummary:null, registrations:[], users:[], editingEvent:null, editingTrainer:null, view:'home' };
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
