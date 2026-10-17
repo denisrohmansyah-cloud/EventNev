@@ -86,7 +86,7 @@ async function refreshAfterAdmin(){await loadDashboard();await loadPublic();}
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button,a');if(!t)return;
  if(t.matches('[data-view="home"]')){e.preventDefault();switchView('home');return;}
- if(t.id==='loginOpen')openModal('login');if(t.id==='registerOpen'||t.id==='ctaRegister')openModal('register');if(t.id==='modalClose')closeModal();
+ if(t.id==='loginOpen')openModal('login');if(t.id==='registerOpen'||t.id==='ctaRegister')openModal('login');if(t.id==='modalClose')closeModal();
  if(t.id==='mobileMenu')$('.desktop-nav').classList.toggle('open');
  if(t.dataset.switch)openModal(t.dataset.switch);
  if(t.id==='logoutButton'){try{await api('logout');}catch(_){}state.user=null;state.token='';state.myRegistrations=[];switchView('home');toast('Kamu telah keluar.');}
