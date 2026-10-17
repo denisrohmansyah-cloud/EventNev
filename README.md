@@ -29,7 +29,7 @@ Website pendaftaran Bootcamp, Seminar, Webinar, Open Recruitment, dan Open Labor
    - Execute as: **Me**
    - Who has access: **Anyone** (dibutuhkan untuk website publik; endpoint tetap melakukan pemeriksaan role untuk aksi privat).
 7. Deploy, salin URL Web App yang berakhiran `/exec`.
-8. Buka `app.js` dan isi `const API_URL = '';` dengan URL deployment, misalnya `const API_URL = 'https://script.google.com/macros/s/DEPLOYMENT_ID/exec';`.
+8. Buka `app.js` dan isi `const API_URL = 'https://script.google.com/macros/s/AKfycbybwMPI1cbVV8pGJvjnC3Uq_kg6llnzoCX5XoyJhbXc8nFu8YjNoItf65Ywojtr6KW1/exec';` dengan URL deployment, misalnya `const API_URL = 'https://script.google.com/macros/s/DEPLOYMENT_ID/exec';`.
 9. Commit perubahan dan aktifkan GitHub Pages di **Settings → Pages**, pilih branch `main` dan folder `/ (root)`.
 10. Buka website. Daftarkan akun menggunakan email yang sama persis dengan `ADMIN_EMAIL` untuk membuat admin pertama. Pastikan admin pertama berhasil login, kemudian batasi atau ubah proses pemberian role admin sesuai kebijakan pengelola.
 
