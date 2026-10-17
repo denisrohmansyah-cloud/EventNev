@@ -47,7 +47,24 @@ function renderEvents(){
 function renderTrainers(){
  $('#trainerGrid').innerHTML=state.trainers.length?state.trainers.slice().sort((a,b)=>(Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)).map(t=>`<article class="trainer-card"><div class="trainer-photo">${t.photoUrl?'<img loading="lazy" src="'+esc(t.photoUrl)+'" alt="Foto '+esc(t.name)+'" onerror="this.remove()">':'<span class="trainer-initial">'+esc(String(t.name||'N').slice(0,1).toUpperCase())+'</span>'}</div><div class="trainer-info"><h3>${esc(t.name)}</h3><span class="role">${esc(t.roleTitle||'Trainer Network Evolution')}</span><p>${esc(t.expertise||t.bio||'Berbagi wawasan dan pengalaman teknologi.')}</p></div></article>`).join(''):'<div class="empty-state"><span class="empty-icon">◎</span><h3>Meet our trainers</h3><p>Profil trainer akan ditampilkan setelah dipublikasikan admin.</p></div>';
 }
-async function loadPublic(){try{const d=await api('publicData',{},false);state.events=d.events||[];state.trainers=d.trainers||[];state.announcements=d.announcements||[];state.footer=d.footer||{};renderEvents();renderTrainers();renderPublicStats(d.stats||{});renderSiteFooter(state.footer);}catch(e){console.info('EventNev backend:',e.message);}}
+async function loadPublic(){
+  // Render a complete public shell immediately; API data replaces these defaults when available.
+  renderSiteFooter({...footerDefaults(),...(state.footer||{})});
+  renderPublicStats({events:0,alumni:60,participants:90});
+  try{
+    const d=await api('publicData',{},false);
+    state.events=d.events||[];state.trainers=d.trainers||[];state.announcements=d.announcements||[];
+    state.footer={...footerDefaults(),...(d.footer||{})};
+    renderEvents();renderTrainers();
+    renderPublicStats(d.stats||{events:0,alumni:60,participants:90});
+    renderSiteFooter(state.footer);
+  }catch(e){
+    console.warn('EventNev backend unavailable; showing default footer and minimum counters:',e.message);
+    renderEvents();renderTrainers();
+    renderPublicStats({events:0,alumni:60,participants:90});
+    renderSiteFooter({...footerDefaults(),...(state.footer||{})});
+  }
+}
 function renderPublicStats(stats){const fmt=n=>new Intl.NumberFormat('id-ID').format(Number(n)||0);const map={statEvents:stats.events,statAlumni:stats.alumni,statParticipants:stats.participants};Object.entries(map).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.textContent=value===undefined?'0':fmt(value);});}
 function renderDashboardShell(){
  $('#sidebarName').textContent=state.user.name;$('#sidebarRole').textContent=state.user.role==='admin'?'Administrator':'Peserta';$('#sidebarAvatar').textContent=(state.user.name||'E').slice(0,1).toUpperCase();
