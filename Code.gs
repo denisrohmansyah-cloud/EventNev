@@ -5,6 +5,7 @@
  * deployments, migrate session transport to a backend with CORS/HTTP-only cookies.
  */
 const APP = { name: 'EventNev', version: '1.0.0' };
+const DEFAULT_SHEET_ID = '1y3nD14mwo93bRUKFENKwQLUxAtEQVLfYmyUBGQ5lAdE';
 const TABLES = {
   Users: ['id','name','email','passwordHash','salt','role','status','createdAt'],
   Events: ['id','title','category','description','date','time','location','capacity','trainerId','status','registrationDeadline','requirements','createdAt','updatedAt'],
@@ -62,7 +63,7 @@ function setupDatabase() {
 
 function getDb_() {
   const props = PropertiesService.getScriptProperties();
-  const id = props.getProperty('SHEET_ID');
+  const id = props.getProperty('SHEET_ID') || DEFAULT_SHEET_ID;
   if (id) return SpreadsheetApp.openById(id);
   const active = SpreadsheetApp.getActiveSpreadsheet();
   if (active) return active;
