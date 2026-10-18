@@ -207,6 +207,30 @@ function doGet(e) {
 function doPost(e) {
   try {
     const p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (p.action === 'uploadAdminImage') {
+      const email = String(p.adminEmail || '').trim().toLowerCase();
+      const users = sheetToObjects(getSheet(SHEET.USERS));
+      const admin = users.find(u => String(u.email || '').trim().toLowerCase() === email && String(u.jenis || '').trim() === 'Admin');
+      if (!admin) return jsonResponse({success:false,message:'Akses upload hanya untuk admin.'});
+      if (['event','trainer'].indexOf(String(p.kind || '')) < 0) return jsonResponse({success:false,message:'Jenis gambar tidak valid.'});
+      const mime = String(p.mimeType || '');
+      if (['image/jpeg','image/png','image/webp'].indexOf(mime) < 0) return jsonResponse({success:false,message:'Gunakan gambar JPG, PNG, atau WEBP.'});
+      const b64 = String(p.base64 || '');
+      if (!b64 || b64.length > 7000000) return jsonResponse({success:false,message:'Ukuran gambar terlalu besar.'});
+      const bytes = Utilities.base64Decode(b64);
+      if (bytes.length > 5 * 1024 * 1024) return jsonResponse({success:false,message:'Ukuran gambar maksimal 5 MB.'});
+      const folderKey = 'EVENTNEV_PUBLIC_IMAGES_FOLDER_ID';
+      const props = PropertiesService.getScriptProperties();
+      let folder = null;
+      const savedFolder = props.getProperty(folderKey);
+      if (savedFolder) { try { folder = DriveApp.getFolderById(savedFolder); } catch (ignore) {} }
+      if (!folder) { folder = DriveApp.createFolder('EventNev - Gambar Event dan Trainer'); props.setProperty(folderKey, folder.getId()); }
+      const cleanName = String(p.fileName || 'eventnev-image').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0,100);
+      const file = folder.createFile(Utilities.newBlob(bytes, mime, cleanName));
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      const directUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+      return jsonResponse({success:true,url:directUrl,fileId:file.getId(),message:'Gambar berhasil diunggah.'});
+    }
     if (p.action !== 'uploadRequirementPhoto') return jsonResponse({success:false,message:'Aksi tidak dikenal.'});
     const userId = String(p.userId || '').trim();
     const email = String(p.email || '').trim().toLowerCase();
