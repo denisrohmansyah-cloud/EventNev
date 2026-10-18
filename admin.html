@@ -53,6 +53,39 @@
       font-size: .75rem;
       border-radius: var(--radius-sm);
     }
+
+    .admin-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .admin-editor-label {
+      display: block;
+      margin-top: 12px;
+      font-size: .82rem;
+      color: var(--text);
+    }
+    .admin-editor-label input,
+    .admin-editor-label textarea {
+      display: block;
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      font: inherit;
+      color: var(--text);
+      background: var(--dark-3);
+      border: 1px solid var(--dark-4);
+      border-radius: 8px;
+    }
+    .admin-editor-label input:focus,
+    .admin-editor-label textarea:focus {
+      outline: 2px solid var(--red);
+      outline-offset: 1px;
+    }
+    @media (max-width: 600px) {
+      .admin-editor-grid { grid-template-columns: 1fr; }
+      .db-section-title { align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body class="dashboard-body">
@@ -94,6 +127,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="admin.js?v=20261017"></script>
+<script src="admin.js?v=20261018-3"></script>
 </body>
 </html>
