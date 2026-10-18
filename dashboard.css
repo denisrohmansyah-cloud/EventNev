@@ -514,3 +514,22 @@
 .db-cancel-application:hover { background:rgba(225,38,47,.18); border-color:rgba(225,38,47,.65); }
 .db-cancel-application:focus-visible { outline:2px solid #ff858c; outline-offset:2px; }
 @media(max-width:560px) { .db-app-card { align-items:flex-start; flex-wrap:wrap; } .db-app-info { min-width:0; flex:1; } .db-app-status { width:100%; padding-left:56px; } }
+
+
+/* Final polish: show the full event poster and responsive event grid */
+.db-event-image { height: auto; aspect-ratio: 16 / 9; min-height: 150px; background: #101014; }
+.db-event-image img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
+.db-events-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+.db-event-card { height: 100%; }
+.db-event-content { min-width: 0; }
+.db-event-content h3, .db-event-description { overflow-wrap: anywhere; }
+.db-event-meta { width: 100%; }
+.db-event-meta span { overflow-wrap: anywhere; }
+@media (max-width: 1180px) {
+  .db-events-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .db-events-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .db-event-image { aspect-ratio: 16 / 9; min-height: 0; }
+  .db-event-content { padding: 15px; }
+}
