@@ -1329,3 +1329,79 @@ p  { font-size: 1rem; line-height: 1.7; }
     padding: 15px !important;
   }
 }
+
+/* FINAL FIX: the outer section.modal is the dialog panel; modalContent is only its content wrapper */
+#eventModal {
+  box-sizing: border-box !important;
+  padding: 20px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+#eventModal > section.modal {
+  box-sizing: border-box !important;
+  position: relative !important;
+  width: min(560px, calc(100vw - 40px)) !important;
+  max-width: 560px !important;
+  max-height: calc(100vh - 40px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  border-radius: 24px !important;
+  background: var(--dark-2) !important;
+}
+#eventModal #modalContent {
+  position: static !important;
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+#eventModal #modalContent > .modal-img {
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--dark-3) !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: min(46vh, 380px) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+#eventModal #modalContent > .modal-body {
+  padding: 20px !important;
+}
+#eventModal .modal-close {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 5 !important;
+}
+@media (max-width: 640px) {
+  #eventModal { padding: 12px !important; }
+  #eventModal > section.modal {
+    width: calc(100vw - 24px) !important;
+    max-width: 460px !important;
+    max-height: calc(100dvh - 24px) !important;
+    border-radius: 20px !important;
+  }
+  #eventModal #modalContent > .modal-img img {
+    max-height: 34dvh !important;
+  }
+  #eventModal #modalContent > .modal-body {
+    padding: 15px !important;
+  }
+}
