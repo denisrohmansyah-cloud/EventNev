@@ -130,13 +130,65 @@ async function renderStats() {
           <div class="db-stat"><div class="db-stat-icon">📋</div><b>${data.applications || 0}</b><span>Pendaftaran</span></div>
           <div class="db-stat"><div class="db-stat-icon">✅</div><b>${data.approved || 0}</b><span>Disetujui</span></div>
         </div>
-        <div style="margin-top:16px;padding:20px;background:var(--dark-2);border:1px solid var(--dark-4);border-radius:var(--radius);">
-          <p style="font-size:.9rem;color:var(--text-dim);">Pilih menu di sidebar untuk mengelola konten portal EventNev.</p>
-        </div>
+        <section class="admin-overview-section" style="margin-top:24px;">
+        <div class="db-section-title">Kegiatan Terpublikasi <button class="btn btn-outline admin-btn-sm" onclick="renderStats()">↻ Perbarui</button></div>
+        <div id="adminPublishedEvents" class="admin-published-grid"><div class="db-loading">Memuat kegiatan…</div></div>
+      </section>
+      <section class="admin-overview-section" style="margin-top:28px;">
+        <div class="db-section-title">Pendaftaran Terbaru <button class="btn btn-outline admin-btn-sm" onclick="renderStats()">↻ Perbarui</button></div>
+        <div id="adminLatestApplications" class="table-wrap"><div class="db-loading">Memuat pendaftaran…</div></div>
+      </section>
       </div>
     `);
+    await Promise.all([loadAdminPublishedEvents(), loadAdminLatestApplications()]);
   } catch {
     setContent('<div class="db-loading">Gagal memuat statistik.</div>');
+  }
+}
+
+async function loadAdminPublishedEvents() {
+  const el = document.getElementById("adminPublishedEvents");
+  if (!el) return;
+  try {
+    const data = await apiFetch({ action: "getEvents" });
+    const events = (Array.isArray(data) ? data : []).filter(ev => {
+      const status = String(ev.status || "").toLowerCase();
+      return !["draft", "drafts", "unpublished", "arsip", "archived", "nonaktif"].includes(status);
+    });
+    adminState.events = Array.isArray(data) ? data : [];
+    el.innerHTML = events.length ? events.map(ev => {
+      const poster = ev.gambar ? '<img src="' + sanitize(ev.gambar) + '" alt="Poster kegiatan" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="admin-published-placeholder">📅</div>';
+      return '<article class="admin-published-card">' + poster + '<div class="admin-published-body"><span class="admin-published-status">' + sanitize(ev.status || "Terpublikasi") + '</span><h3>' + sanitize(ev.nama || "Kegiatan") + '</h3><p>' + sanitize(ev.kategori || "Kegiatan EventNev") + '</p><p>📅 ' + formatDate(ev.tanggal) + ' · 📍 ' + sanitize(ev.lokasi || "Lokasi menyusul") + '</p><button class="btn btn-outline admin-btn-sm" onclick="switchView(\'events\')">Kelola kegiatan</button></div></article>';
+    }).join("") : '<div class="admin-overview-empty">Belum ada kegiatan yang dipublikasikan.</div>';
+  } catch {
+    el.innerHTML = '<div class="admin-overview-empty">Kegiatan gagal dimuat.</div>';
+  }
+}
+
+async function loadAdminLatestApplications() {
+  const el = document.getElementById("adminLatestApplications");
+  if (!el) return;
+  try {
+    const data = await apiFetch({ action: "getAllApplications" });
+    const apps = (Array.isArray(data) ? data : []).filter(a => !["cancelled", "dibatalkan"].includes(String(a.status || "").toLowerCase())).sort((a,b) => new Date(b.tanggalDaftar || 0) - new Date(a.tanggalDaftar || 0)).slice(0, 8);
+    adminState.applications = Array.isArray(data) ? data : [];
+    const rows = apps.map(app => '<tr><td>' + sanitize(app.namaEvent || app.eventId || "—") + '</td><td>' + sanitize(app.userId || "—") + '</td><td>' + formatDate(app.tanggalDaftar) + '</td><td><span class="admin-status-pill ' + sanitize(String(app.status || "pending").toLowerCase()) + '">' + sanitize(({pending:"Menunggu",menunggu:"Menunggu",approved:"Disetujui",rejected:"Ditolak",hadir:"Hadir"})[String(app.status || "pending").toLowerCase()] || app.status || "Menunggu") + '</span></td><td>' + (["pending","menunggu",""].includes(String(app.status || "pending").toLowerCase()) ? '<button class="btn btn-primary admin-btn-sm" onclick="quickUpdateAppStatus(\'' + sanitize(String(app.id)) + '\',\'approved\')">Setujui</button> <button class="btn btn-outline admin-btn-sm" style="color:#ff777f" onclick="quickUpdateAppStatus(\'' + sanitize(String(app.id)) + '\',\'rejected\')">Tolak</button>' : '<button class="btn btn-outline admin-btn-sm" onclick="switchView(\'applications\')">Detail</button>') + '</td></tr>').join("");
+    el.innerHTML = apps.length ? '<table class="admin-table"><thead><tr><th>Kegiatan</th><th>Peserta ID</th><th>Tanggal daftar</th><th>Status</th><th>Aksi</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="admin-overview-empty">Belum ada pendaftaran aktif.</div>';
+  } catch {
+    el.innerHTML = '<div class="admin-overview-empty">Pendaftaran gagal dimuat. Periksa deployment Apps Script.</div>';
+  }
+}
+
+window.quickUpdateAppStatus = async function(appId, status) {
+  const label = status === "approved" ? "menyetujui" : "menolak";
+  if (!confirm("Yakin ingin " + label + " pendaftaran ini?")) return;
+  try {
+    const result = await apiFetch({ action: "updateStatus", appId, status });
+    if (!result || !result.success) { toast(result?.message || "Status gagal diperbarui.", "error"); return; }
+    toast(status === "approved" ? "Pendaftaran disetujui." : "Pendaftaran ditolak.", "success");
+    await renderStats();
+  } catch (err) {
+    toast("Tidak dapat memperbarui pendaftaran.", "error");
   }
 }
 
