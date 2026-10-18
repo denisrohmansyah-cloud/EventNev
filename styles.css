@@ -1156,3 +1156,8 @@ p  { font-size: 1rem; line-height: 1.7; }
 }
 .scanner-close { color: var(--text-dim); }
 .scanner-close:hover { color: var(--text); }
+
+/* Impact stats: keep only the three metrics aligned in one balanced row. */
+#impactStats { align-self: center; width: 100%; min-width: 0; }
+#impactStats > div { padding: clamp(22px, 2.2vw, 32px) clamp(14px, 1.5vw, 24px); }
+@media (max-width: 768px) { #impactStats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
