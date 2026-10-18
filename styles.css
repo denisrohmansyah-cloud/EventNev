@@ -774,7 +774,7 @@ p  { font-size: 1rem; line-height: 1.7; }
   font-weight: 800;
   color: #f4f4f5;
 }
-.footer-brand-title > span { color: #ff1744; }
+.footer-brand-title > span { color: var(--red); }
 .footer-brand-title small {
   display: block;
   margin-top: 5px;
@@ -810,9 +810,9 @@ p  { font-size: 1rem; line-height: 1.7; }
   transition: color .2s ease, border-color .2s ease, background .2s ease;
 }
 .footer-tags span:hover {
-  color: #ff1744;
-  border-color: #ff1744;
-  background: rgba(255, 23, 68, .05);
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(225, 38, 47, .05);
 }
 .footer-findus { min-width: 0; }
 .findus-title {
@@ -832,7 +832,7 @@ p  { font-size: 1rem; line-height: 1.7; }
   bottom: 0;
   width: 28px;
   height: 2px;
-  background: #ff1744;
+  background: var(--red);
 }
 .findus-grid {
   display: grid;
@@ -860,17 +860,17 @@ p  { font-size: 1rem; line-height: 1.7; }
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: #ff1744;
+  background: var(--red);
   transform: scaleY(0);
   transform-origin: bottom;
   transition: transform .28s ease;
 }
 .findus-card:hover,
 .findus-card:focus-visible {
-  border-color: #ff1744;
+  border-color: var(--red);
   background: #10070a;
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(255, 23, 68, .10);
+  box-shadow: 0 8px 24px rgba(225, 38, 47, .10);
   outline: none;
 }
 .findus-card:hover::before,
@@ -888,7 +888,7 @@ p  { font-size: 1rem; line-height: 1.7; }
 .findus-icon svg { width: 100%; height: 100%; }
 .findus-card:hover .findus-icon,
 .findus-card:focus-visible .findus-icon {
-  color: #ff1744;
+  color: var(--red);
   transform: scale(1.12);
 }
 .findus-copy { min-width: 0; }
@@ -902,7 +902,7 @@ p  { font-size: 1rem; line-height: 1.7; }
 }
 .findus-card:hover .findus-name,
 .findus-card:focus-visible .findus-name {
-  color: #ff1744;
+  color: var(--red);
 }
 .findus-handle {
   font-size: .8rem;
@@ -940,9 +940,9 @@ p  { font-size: 1rem; line-height: 1.7; }
   letter-spacing: .08em;
   color: #9b9ba3;
 }
-.footer-nev { color: #ff1744; }
+.footer-nev { color: var(--red); }
 .footer-motto { display: inline-flex; align-items: center; gap: 10px; }
-.footer-motto span { color: #ff1744; font-size: .65rem; }
+.footer-motto span { color: var(--red); font-size: .65rem; }
 
 /* === MODAL === */
 .modal-backdrop {
