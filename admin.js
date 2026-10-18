@@ -4,7 +4,7 @@
  */
 "use strict";
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybwMPI1cbVV8pGJvjnC3Uq_kg6llnzoCX5XoyJhbXc8nFu8YjNoItf65Ywojtr6KW1/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgaSasJsN-J20DjJdKJ_0QHsA_8u_r9nqln6ZFFSrcPdljrMzZLkleEfqExnJvNMty/exec";
 
 const adminState = {
   view: "stats",
