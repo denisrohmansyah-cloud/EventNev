@@ -1990,3 +1990,15 @@ p  { font-size: 1rem; line-height: 1.7; }
     border-radius: 16px !important;
   }
 }
+
+
+/* Hide the modal scrollbar visually while keeping the content scrollable */
+#eventModal > section.modal {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#eventModal > section.modal::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
