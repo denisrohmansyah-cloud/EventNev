@@ -558,3 +558,39 @@
 .admin-overview-section .admin-table { min-width:720px; }
 @media(max-width:1100px) { .admin-published-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:640px) { .admin-published-grid { grid-template-columns:minmax(0,1fr); } .admin-published-card > img { max-height:none; } .admin-published-body { padding:13px; } }
+
+
+/* Admin certificate manager */
+.admin-cert-shell { max-width: 1200px; margin: 0 auto; }
+.admin-cert-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
+.admin-cert-heading h2 { font-size:1.25rem; font-weight:800; margin:0 0 8px; }
+.admin-cert-heading p, .admin-cert-form-title p { color:var(--text-dim); font-size:.88rem; line-height:1.6; margin:0; max-width:720px; }
+.admin-cert-count { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background:rgba(225,38,47,.12); color:#ff7d84; font-size:.8rem; font-weight:700; white-space:nowrap; }
+.admin-cert-form { padding:22px; border:1px solid var(--dark-4); background:var(--dark-2); border-radius:18px; }
+.admin-cert-form-title { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+.admin-cert-form-title > span { display:grid; place-items:center; width:46px; height:46px; border-radius:13px; background:rgba(225,38,47,.13); font-size:1.35rem; flex:none; }
+.admin-cert-form-title h3 { margin:0 0 5px; font-size:1.03rem; }
+.admin-cert-file-label { margin-top:20px !important; }
+.admin-cert-file-label input[type=file] { width:100%; min-height:54px; border:1px dashed var(--dark-4); background:var(--dark-3); }
+.admin-cert-file-preview { display:flex; align-items:center; gap:12px; min-height:56px; margin-top:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--dark-4); color:var(--text-dim); font-size:.85rem; overflow-wrap:anywhere; }
+.admin-cert-file-preview > span:last-child { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.admin-cert-file-preview b { color:var(--text); overflow-wrap:anywhere; }
+.admin-cert-file-preview small { color:var(--text-dim); }
+.admin-cert-file-icon { font-size:1.5rem; }
+.admin-cert-actions { display:flex; justify-content:flex-end; margin-top:18px; }
+.admin-cert-actions button { min-height:44px; }
+.admin-cert-message { min-height:20px; margin-top:12px; font-size:.86rem; color:var(--text-dim); overflow-wrap:anywhere; }
+.admin-cert-message.success { color:#4ade80; }
+.admin-cert-message.error { color:#ff858c; }
+.admin-cert-list-section { margin-top:30px; }
+.admin-cert-list-section .db-section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.admin-cert-list-section .table-wrap { overflow-x:auto; }
+.admin-cert-list-section .admin-table { min-width:680px; }
+.admin-cert-error { padding:24px; border:1px solid rgba(225,38,47,.3); border-radius:14px; background:var(--dark-2); }
+.admin-cert-error p { color:var(--text-dim); line-height:1.6; }
+@media(max-width:640px) {
+ .admin-cert-form { padding:15px; }
+ .admin-cert-actions { justify-content:stretch; }
+ .admin-cert-actions button { width:100%; }
+ .admin-cert-heading { gap:10px; }
+}
