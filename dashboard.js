@@ -203,6 +203,20 @@ function isDashboardEventOpen(ev) {
   const status = String(ev.status || "").trim().toLowerCase();
   return !status || /buka|open|available|aktif/i.test(status);
 }
+function normalizeDashboardImageUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    if (u.hostname === "drive.google.com" || u.hostname === "docs.google.com") {
+      let id = u.searchParams.get("id");
+      if (!id) { const m = u.pathname.match(/\/file\/d\/([^/]+)/); if (m) id = m[1]; }
+      if (id) return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w1600";
+    }
+  } catch (_) {}
+  return raw;
+}
+
 function buildDashboardEventCard(ev) {
   const eventId = String(ev.id || ev.nama || '');
   const userId = state.user?.id || state.user?.email;
@@ -227,7 +241,7 @@ function openDashboardEventDetail(eventId) {
   const userId = state.user?.id || state.user?.email;
   const registered = state.applications.some(a => String(a.userId) === String(userId) && !["cancelled", "dibatalkan"].includes(String(a.status || "").toLowerCase()) && (String(a.eventId) === String(eventId) || String(a.namaEvent || '') === String(ev.nama || '')));
   const open = isDashboardEventOpen(ev);
-  document.getElementById('dbModalBody').innerHTML = (ev.gambar ? '<img class="db-modal-poster" src="' + sanitize(ev.gambar) + '" alt="Poster kegiatan">' : '<div class="db-modal-poster-placeholder">📅</div>') + '<h3 class="db-modal-event-name">' + sanitize(ev.nama) + '</h3><div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
+  document.getElementById('dbModalBody').innerHTML = (ev.gambar ? '<img class="db-modal-poster" src="' + sanitize(normalizeDashboardImageUrl(ev.gambar)) + '" alt="Poster kegiatan" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display=\\'none\\';this.insertAdjacentHTML(\\'afterend\\',\\'<div class=\\\"db-modal-poster-placeholder\\\">Poster tidak dapat dimuat</div>\\')">' : '<div class="db-modal-poster-placeholder">📅</div>') + '<h3 class="db-modal-event-name">' + sanitize(ev.nama) + '</h3><div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
     '<div class="db-modal-info">' + (ev.tanggal ? '<div><span>Tanggal</span><strong>' + formatDate(ev.tanggal) + '</strong></div>' : '') + (ev.waktu ? '<div><span>Waktu</span><strong>' + sanitize(ev.waktu) + '</strong></div>' : '') + (ev.lokasi ? '<div><span>Lokasi</span><strong>' + sanitize(ev.lokasi) + '</strong></div>' : '') + (ev.biaya || ev.harga ? '<div><span>Biaya</span><strong>' + sanitize(ev.biaya || ev.harga) + '</strong></div>' : '') + '</div><h4>Deskripsi</h4><p class="db-modal-description">' + sanitize(ev.deskripsi || 'Informasi kegiatan belum ditambahkan.') + '</p>' + (ev.persyaratanFoto ? '<div class="db-modal-requirement"><strong>Persyaratan</strong><p>' + sanitize(ev.persyaratanFoto) + '</p><small>Unggah persyaratan melalui halaman Event sebelum mendaftar.</small></div>' : '');
   document.getElementById('dbModalFooter').innerHTML = '<button type="button" class="btn btn-outline" onclick="closeDashboardEventDetail()">Tutup</button>' + (registered ? '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>' : (!open ? '<button class="db-event-action" disabled>Pendaftaran ditutup</button>' : (ev.persyaratanFoto ? '<button class="db-event-action" onclick="openDashboardEventRequirements(\'' + sanitize(eventId) + '\')">Lanjut ke persyaratan</button>' : '<button class="db-event-action" onclick="registerToEvent(\'' + sanitize(eventId) + '\')">Daftar sekarang →</button>')));
   modal.hidden = false; document.body.classList.add('db-modal-open');
