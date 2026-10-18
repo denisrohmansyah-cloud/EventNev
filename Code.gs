@@ -428,35 +428,38 @@ function handleAlumniCount() {
 function handleDaftar(p) {
   const { userId, eventId, nama, email, requirementFileId, requirementFileName } = p;
   if (!userId || !eventId) return { success: false, message: "Data tidak lengkap." };
-
   const sheet = getSheet(SHEET.APPLICATIONS);
   const apps = sheetToObjects(sheet);
-  if (apps.find(a => String(a.userId) === String(userId) && String(a.eventId) === String(eventId))) {
-    return { success: false, message: "Kamu sudah mendaftar ke kegiatan ini." };
+  const existing = apps.find(a => String(a.userId) === String(userId) && String(a.eventId) === String(eventId));
+  if (existing) {
+    const oldStatus = String(existing.status || "pending").trim().toLowerCase();
+    if (oldStatus !== "cancelled" && oldStatus !== "dibatalkan") return { success: false, message: "Kamu sudah mendaftar ke kegiatan ini." };
   }
-
-  // Get event details
   const evSheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(evSheet);
-  const ev = events.find(e => String(e.id) === String(eventId) || e.nama === eventId);
+  const ev = events.find(e => String(e.id) === String(eventId) || String(e.nama) === String(eventId));
   if (ev && String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
   }
-
+  if (existing && ["cancelled", "dibatalkan"].includes(String(existing.status || "").trim().toLowerCase())) {
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    const row = apps.findIndex(a => String(a.id) === String(existing.id)) + 2;
+    if (row < 2) return { success: false, message: "Data pendaftaran lama tidak ditemukan." };
+    const values = {
+      namaEvent: ev ? ev.nama : (existing.namaEvent || eventId),
+      kategori: ev ? ev.kategori : (existing.kategori || ""),
+      tanggalDaftar: new Date().toISOString(),
+      status: "pending",
+      catatan: "",
+      requirementFileId: requirementFileId || "",
+      requirementFileName: requirementFileName || ""
+    };
+    Object.keys(values).forEach(key => { const col = headers.indexOf(key); if (col >= 0) sheet.getRange(row, col + 1).setValue(values[key]); });
+    SpreadsheetApp.flush();
+    return { success: true, message: "Pendaftaran berhasil dibuat kembali! Menunggu konfirmasi admin." };
+  }
   const id = "APP_" + Date.now();
-  sheet.appendRow([
-    id,
-    userId,
-    eventId,
-    ev ? ev.nama : eventId,
-    ev ? ev.kategori : "",
-    new Date().toISOString(),
-    "pending",
-    "",
-    requirementFileId || "",
-    requirementFileName || "",
-  ]);
-
+  sheet.appendRow([id, userId, eventId, ev ? ev.nama : eventId, ev ? ev.kategori : "", new Date().toISOString(), "pending", "", requirementFileId || "", requirementFileName || ""]);
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
 }
 
