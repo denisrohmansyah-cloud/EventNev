@@ -470,3 +470,40 @@
 .db-events-empty strong { color: var(--text); }
 .db-events-empty p { font-size: .82rem; line-height: 1.5; }
 @media (max-width: 900px) { .db-events-grid { grid-template-columns: 1fr; } .db-event-image { height: 180px; } }
+
+
+/* Event detail modal — inspired by the supplied reference */
+.db-event-image-button { width:100%; border:0; padding:0; cursor:pointer; color:inherit; }
+.db-modal-open { overflow:hidden; }
+.db-modal-backdrop { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.68); backdrop-filter:blur(5px); }
+.db-modal-backdrop[hidden] { display:none !important; }
+.db-modal { width:min(100%, 570px); max-height:min(88vh, 900px); display:flex; flex-direction:column; overflow:hidden; border:1px solid rgba(255,255,255,.12); border-radius:18px; background:#17171b; color:#f7f7fa; box-shadow:0 24px 90px rgba(0,0,0,.5); animation:dbModalIn .18s ease-out; }
+@keyframes dbModalIn { from { opacity:0; transform:translateY(8px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+.db-modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:17px 20px; border-bottom:1px solid rgba(255,255,255,.09); }
+.db-modal-header h2 { font-size:1rem; font-weight:800; }
+.db-modal-close { width:34px; height:34px; display:grid; place-items:center; border:0; border-radius:9px; background:rgba(255,255,255,.06); color:#eee; font-size:1.4rem; cursor:pointer; }
+.db-modal-close:hover { background:rgba(225,38,47,.2); }
+.db-modal-body { padding:20px; overflow:auto; }
+.db-modal-poster { display:block; width:100%; max-height:310px; object-fit:contain; background:#0e0e11; border:1px solid rgba(255,255,255,.09); border-radius:12px; margin-bottom:18px; }
+.db-modal-poster-placeholder { display:grid; place-items:center; height:160px; background:rgba(225,38,47,.08); border-radius:12px; font-size:2rem; margin-bottom:18px; }
+.db-modal-event-name { font-size:1.15rem; line-height:1.4; font-weight:800; margin-bottom:12px; }
+.db-modal-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; margin:16px 0; border-top:1px solid rgba(255,255,255,.08); }
+.db-modal-info > div { display:flex; flex-direction:column; gap:5px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.08); min-width:0; }
+.db-modal-info span { color:var(--text-dim); font-size:.72rem; }
+.db-modal-info strong { font-size:.83rem; overflow-wrap:anywhere; }
+.db-modal-body h4 { font-size:.85rem; margin:18px 0 7px; }
+.db-modal-description { white-space:pre-line; font-size:.85rem; line-height:1.7; color:var(--text-dim); }
+.db-modal-requirement { padding:13px; margin-top:16px; border:1px solid rgba(245,199,123,.25); border-radius:10px; background:rgba(245,199,123,.06); font-size:.82rem; line-height:1.6; }
+.db-modal-requirement p { margin:5px 0; }
+.db-modal-requirement small { color:#f5c77b; }
+.db-modal-footer { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid rgba(255,255,255,.09); }
+.db-modal-footer .db-event-action { width:auto; min-width:170px; margin:0; }
+@media(max-width:560px) {
+  .db-modal-backdrop { align-items:flex-end; padding:0; }
+  .db-modal { width:100%; max-height:92vh; border-radius:18px 18px 0 0; }
+  .db-modal-body { padding:16px; }
+  .db-modal-poster { max-height:240px; }
+  .db-modal-footer { padding:12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .db-modal-footer .db-event-action { min-width:0; flex:1; }
+  .db-modal-info { grid-template-columns:1fr 1fr; }
+}
