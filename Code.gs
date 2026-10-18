@@ -191,6 +191,10 @@ function doGet(e) {
       case "updateStatus":    result = adminUpdateStatus(params); break;
       case "deleteApp":       result = adminDeleteApp(params); break;
       case "getStats":        result = adminGetStats(params); break;
+      case "addEvent":         result = adminSaveRecord_("Events", params, "event"); break;
+      case "updateEvent":      result = adminSaveRecord_("Events", params, "event"); break;
+      case "addTrainer":       result = adminSaveRecord_("Trainers", params, "trainer"); break;
+      case "updateTrainer":    result = adminSaveRecord_("Trainers", params, "trainer"); break;
       default:
         result = { success: false, message: "Aksi tidak dikenal: " + action };
     }
@@ -489,4 +493,73 @@ function adminGetStats() {
     applications: Math.max(appCount, 0),
     approved,
   };
+}
+
+
+/* =========================================================
+   ADMIN EDITOR — EVENT & TRAINER
+   ========================================================= */
+function adminSaveRecord_(sheetName, p, type) {
+  // Pastikan pemanggil menyatakan email admin yang terdaftar.
+  // Catatan: untuk keamanan produksi, endpoint perlu session token server-side.
+  const email = String(p.adminEmail || "").trim().toLowerCase();
+  if (!email) return { success: false, message: "Sesi admin tidak ditemukan. Keluar lalu login kembali." };
+
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const admin = users.find(u => String(u.email || "").trim().toLowerCase() === email);
+  if (!admin || String(admin.jenis || "").trim() !== "Admin") {
+    return { success: false, message: "Akses ditolak. Hanya admin yang dapat menyimpan data." };
+  }
+
+  const isEvent = type === "event";
+  const fields = isEvent
+    ? ["nama","kategori","deskripsi","tanggal","waktu","lokasi","kuota","biaya","syarat","status","gambar"]
+    : ["nama","jabatan","keahlian","foto","bio","urutan"];
+
+  if (!String(p.nama || "").trim()) return { success: false, message: "Nama wajib diisi." };
+  if (isEvent && (!String(p.kategori || "").trim() || !String(p.tanggal || "").trim())) {
+    return { success: false, message: "Kategori dan tanggal event wajib diisi." };
+  }
+  if (!isEvent && (!String(p.jabatan || "").trim() || !String(p.keahlian || "").trim())) {
+    return { success: false, message: "Jabatan dan keahlian trainer wajib diisi." };
+  }
+
+  const sheet = getSheet(sheetName);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim());
+  let rowNumber = -1;
+  const recordId = String(p.id || "").trim();
+
+  if (recordId) {
+    const idCol = headers.indexOf("id");
+    if (idCol < 0) return { success: false, message: "Kolom id tidak ditemukan." };
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idCol]) === recordId) { rowNumber = i + 1; break; }
+    }
+    if (rowNumber < 0) return { success: false, message: "Data yang akan diedit tidak ditemukan." };
+  }
+
+  const record = {};
+  record.id = recordId || (isEvent ? "EVT_" : "TRN_") + Date.now();
+  fields.forEach(key => {
+    let value = p[key] == null ? "" : String(p[key]).trim();
+    if (["kuota","biaya","urutan"].includes(key) && value !== "") {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0) throw new Error("Nilai " + key + " harus berupa angka positif.");
+      value = n;
+    }
+    record[key] = value;
+  });
+  if (isEvent && !record.status) record.status = "Buka";
+  if (!isEvent && !record.urutan) record.urutan = 1;
+
+  if (rowNumber < 0) {
+    const newRow = headers.map(h => h === "createdAt" ? new Date().toISOString() : (record[h] !== undefined ? record[h] : ""));
+    sheet.appendRow(newRow);
+  } else {
+    headers.forEach((h, index) => {
+      if (record[h] !== undefined) sheet.getRange(rowNumber, index + 1).setValue(record[h]);
+    });
+  }
+  return { success: true, id: record.id, message: "Data berhasil disimpan." };
 }
