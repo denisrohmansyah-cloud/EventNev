@@ -139,6 +139,10 @@ p  { font-size: 1rem; line-height: 1.7; }
   transition: background var(--transition);
 }
 
+/* Brand tetap kiri, nav dorong ke kanan */
+.topbar .brand { flex-shrink: 0; }
+.topbar nav { margin-left: auto; }
+
 /* Daftar sekarang — red pill button di pojok kanan */
 .topbar-daftar {
   border-radius: 100px !important;
@@ -189,7 +193,7 @@ p  { font-size: 1rem; line-height: 1.7; }
 }
 .topbar nav a#authNav:hover { background: var(--red-dark) !important; transform: translateY(-1px); }
 
-.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; margin-left: 8px; }
 .topbar-actions:empty { display: none; }
 
 /* === HERO === */
