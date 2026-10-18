@@ -391,6 +391,10 @@ window.showTrainerForm = function(id = "") {
       ${editorField("urutan","Urutan tampil",t.urutan || "1","number")}
     </div>
     <label class="admin-editor-label">Bio<textarea name="bio" rows="3">${sanitize(t.bio || "")}</textarea></label>
+    <div class="admin-editor-grid">
+      ${editorField("instagram","Link Instagram",t.instagram,"url")}
+      ${editorField("linkedin","Link LinkedIn",t.linkedin,"url")}
+    </div>
     <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-red" type="submit">Simpan Trainer</button><button class="btn btn-outline" type="button" onclick="document.getElementById('trainerFormWrap').innerHTML=''">Batal</button></div>
   </form>`;
   document.getElementById("trainerEditor").addEventListener("submit", async e => {
