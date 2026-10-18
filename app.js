@@ -557,7 +557,7 @@ function initModalClose() {
 }
 
 /* =========================================================
-   ALUMNI COUNT
+   ALUMNI COUNT & PESERTA COUNT
    ========================================================= */
 async function fetchAlumniCount() {
   try {
@@ -567,6 +567,17 @@ async function fetchAlumniCount() {
       const el = document.getElementById(id);
       if (el && typeof count === "number") animateCounter(el, count);
     });
+  } catch {
+    // Keep default "—"
+  }
+}
+
+async function fetchPesertaCount() {
+  try {
+    const data = await apiFetch({ action: "getPesertaCount" });
+    const count = data.count || data.total || 0;
+    const el = document.getElementById("pesertaCount");
+    if (el && typeof count === "number") animateCounter(el, count);
   } catch {
     // Keep default "—"
   }
@@ -586,6 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchEvents();
   fetchTrainers();
   fetchAlumniCount();
+  fetchPesertaCount();
   if (state.user) {
     fetchMyApplications();
   }
