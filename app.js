@@ -63,11 +63,18 @@ function toast(msg, type = "info") {
 
 function formatEventTime(value) {
   if (value === null || value === undefined || value === "") return "";
+  // Google Sheets time cells can arrive as an ISO date based on 1899-12-30.
+  if (value instanceof Date) {
+    return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(value) + " WIB";
+  }
   const raw = String(value).trim();
   if (/^1899-12-30T/i.test(raw)) {
-    const d = new Date(raw);
-    if (!Number.isNaN(d.getTime())) return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", hour12: false }).format(d) + " WIB";
+    const match = raw.match(/T(\d{2}):(\d{2})/);
+    if (match) return match[1] + "." + match[2] + " WIB";
   }
+  // Also normalize common time formats such as 9:30, 09:30:00, and 09.30.
+  const match = raw.match(/^(\d{1,2})[:.](\d{2})(?::\d{2})?\s*(WIB|WITA|WIT)?$/i);
+  if (match) return match[1].padStart(2, "0") + "." + match[2] + (match[3] ? " " + match[3].toUpperCase() : " WIB");
   return raw;
 }
 
