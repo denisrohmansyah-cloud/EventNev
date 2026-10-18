@@ -1405,3 +1405,49 @@ p  { font-size: 1rem; line-height: 1.7; }
     padding: 15px !important;
   }
 }
+
+/* Compact event detail dialog: smaller footprint on desktop and mobile */
+#eventModal > section.modal {
+  width: min(440px, calc(100vw - 32px)) !important;
+  max-width: 440px !important;
+  max-height: calc(100vh - 48px) !important;
+  border-radius: 20px !important;
+}
+#eventModal #modalContent > .modal-img img {
+  width: auto !important;
+  max-width: 100% !important;
+  max-height: 250px !important;
+  object-fit: contain !important;
+}
+#eventModal #modalContent > .modal-body {
+  padding: 16px !important;
+}
+#eventModal #modalContent > .modal-body h2,
+#eventModal #modalContent > .modal-body h3 {
+  margin-top: 8px !important;
+  margin-bottom: 10px !important;
+  font-size: 1.15rem !important;
+}
+#eventModal #modalContent > .modal-body p {
+  margin: 8px 0 !important;
+  font-size: .92rem !important;
+}
+#eventModal #modalContent > .modal-body .btn,
+#eventModal #modalContent > .modal-body button {
+  min-height: 40px !important;
+}
+@media (max-width: 640px) {
+  #eventModal { padding: 12px !important; }
+  #eventModal > section.modal {
+    width: min(360px, calc(100vw - 24px)) !important;
+    max-width: 360px !important;
+    max-height: calc(100dvh - 24px) !important;
+    border-radius: 18px !important;
+  }
+  #eventModal #modalContent > .modal-img img {
+    max-height: 220px !important;
+  }
+  #eventModal #modalContent > .modal-body {
+    padding: 13px !important;
+  }
+}
