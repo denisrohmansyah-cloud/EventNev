@@ -10,6 +10,7 @@ const state = {
   user: null,
   applications: [],
   certificates: [],
+  events: [],
   view: "overview",
 };
 
@@ -158,6 +159,17 @@ function renderOverview() {
         </div>
       </div>
 
+      <section class="db-events-section" aria-labelledby="availableEventsTitle">
+        <div class="db-section-title">
+          <span id="availableEventsTitle">Kegiatan Tersedia</span>
+          <button class="btn btn-ghost" onclick="refreshDashboardEvents()" style="font-size:.78rem;">↻ Perbarui</button>
+        </div>
+        <p class="db-events-intro">Lihat kegiatan terbaru dan daftar langsung dari dashboard ini.</p>
+        <div class="db-events-grid">
+          ${state.events.length ? state.events.map(buildDashboardEventCard).join("") : '<div class="db-events-empty"><span>🗓️</span><strong>Belum ada kegiatan tersedia</strong><p>Kegiatan yang dipublikasikan admin akan muncul di sini.</p></div>'}
+        </div>
+      </section>
+
       ${recentApps.length ? `
         <div class="db-section-title">
           Pendaftaran terbaru
@@ -184,6 +196,83 @@ function renderOverview() {
   `);
 
   generateQR();
+}
+
+/* --- AVAILABLE EVENTS & DIRECT REGISTRATION --- */
+function isDashboardEventOpen(ev) {
+  const status = String(ev.status || "").trim().toLowerCase();
+  return !status || /buka|open|available|aktif/i.test(status);
+}
+function buildDashboardEventCard(ev) {
+  const eventId = String(ev.id || ev.nama || "");
+  const userId = state.user?.id || state.user?.email;
+  const alreadyRegistered = state.applications.some(a =>
+    String(a.userId) === String(userId) &&
+    (String(a.eventId) === eventId || String(a.namaEvent || "") === String(ev.nama || ""))
+  );
+  const open = isDashboardEventOpen(ev);
+  const requiresPhoto = Boolean(String(ev.persyaratanFoto || "").trim());
+  const image = ev.gambar
+    ? '<img src="' + sanitize(ev.gambar) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+    : '<div class="db-event-placeholder">📅</div>';
+  let action;
+  if (alreadyRegistered) action = '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>';
+  else if (!open) action = '<button class="db-event-action" disabled>Pendaftaran ditutup</button>';
+  else if (requiresPhoto) action = '<button class="db-event-action" onclick="openDashboardEventRequirements(\'' + sanitize(eventId) + '\')">Lihat persyaratan</button>';
+  else action = '<button class="db-event-action" onclick="registerToEvent(\'' + sanitize(eventId) + '\')">Daftar sekarang →</button>';
+  return '<article class="db-event-card"><div class="db-event-image">' + image + '</div><div class="db-event-content">' +
+    '<div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || "Kegiatan") + '</span>' +
+    '<span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
+    '<h3>' + sanitize(ev.nama || "Kegiatan") + '</h3><p class="db-event-description">' + sanitize(ev.deskripsi || "Informasi kegiatan belum ditambahkan.") + '</p>' +
+    '<div class="db-event-meta">' + (ev.tanggal ? '<span>📅 ' + formatDate(ev.tanggal) + '</span>' : '') +
+    (ev.waktu ? '<span>🕒 ' + sanitize(ev.waktu) + '</span>' : '') + (ev.lokasi ? '<span>📍 ' + sanitize(ev.lokasi) + '</span>' : '') +
+    (ev.kuota ? '<span>👥 Kuota ' + sanitize(ev.kuota) + '</span>' : '') + '</div>' +
+    (requiresPhoto && !alreadyRegistered ? '<p class="db-event-requirement">📎 Memerlukan foto persyaratan.</p>' : '') + action + '</div></article>';
+}
+async function refreshDashboardEvents() {
+  await fetchDashboardEvents();
+  renderView();
+  toast("Daftar kegiatan diperbarui.", "success");
+}
+function openDashboardEventRequirements(eventId) {
+  toast("Kegiatan ini memerlukan foto persyaratan. Silakan buka halaman Event untuk mengunggahnya.", "info");
+  window.location.href = "index.html#kegiatan";
+}
+async function registerToEvent(eventId) {
+  const ev = state.events.find(item => String(item.id || item.nama) === String(eventId));
+  if (!ev) { toast("Kegiatan tidak ditemukan. Muat ulang dashboard.", "error"); return; }
+  if (!isDashboardEventOpen(ev)) { toast("Pendaftaran kegiatan ini sudah ditutup.", "error"); return; }
+  const userId = state.user?.id || state.user?.email;
+  if (!userId) { toast("Sesi peserta tidak ditemukan. Silakan login kembali.", "error"); return; }
+  if (state.applications.some(a => String(a.userId) === String(userId) &&
+      (String(a.eventId) === String(eventId) || String(a.namaEvent || "") === String(ev.nama || "")))) {
+    toast("Kamu sudah terdaftar pada kegiatan ini.", "info"); renderView(); return;
+  }
+  if (String(ev.persyaratanFoto || "").trim()) { openDashboardEventRequirements(eventId); return; }
+  const button = Array.from(document.querySelectorAll(".db-event-action")).find(b => b.getAttribute("onclick")?.includes("registerToEvent"));
+  if (button) { button.disabled = true; button.textContent = "Memproses…"; }
+  try {
+    const result = await apiFetch({ action: "daftar", userId, eventId: String(ev.id || ev.nama), nama: state.user.nama || "", email: state.user.email || "" });
+    if (!result || !result.success) { toast(result?.message || "Pendaftaran gagal. Silakan coba lagi.", "error"); return; }
+    await fetchApplications();
+    renderView();
+    toast(result.message || "Pendaftaran berhasil!", "success");
+  } catch (err) {
+    console.error("Pendaftaran dari dashboard gagal:", err);
+    toast("Tidak dapat menghubungi server. Coba lagi.", "error");
+  } finally {
+    if (button && button.isConnected) { button.disabled = false; button.textContent = "Daftar sekarang →"; }
+  }
+}
+async function fetchDashboardEvents() {
+  try {
+    const data = await apiFetch({ action: "getEvents" });
+    const events = Array.isArray(data) ? data : (data?.events || []);
+    state.events = events.filter(ev => ev && ev.id && ev.nama);
+  } catch (err) {
+    console.error("fetchDashboardEvents:", err);
+    state.events = [];
+  }
 }
 
 /* --- APPLICATIONS --- */
@@ -386,6 +475,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initScanner();
 
   setContent('<div class="db-loading">Memuat data…</div>');
-  await Promise.all([fetchApplications(), fetchCertificates()]);
+  await Promise.all([fetchApplications(), fetchCertificates(), fetchDashboardEvents()]);
   renderOverview();
 });
