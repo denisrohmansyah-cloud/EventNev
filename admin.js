@@ -39,6 +39,8 @@ function formatDate(d) {
 async function apiFetch(params) {
   const url = new URL(SCRIPT_URL);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const sessionUser = JSON.parse(localStorage.getItem("nevUser") || "{}");
+  if (sessionUser.email) url.searchParams.set("adminEmail", sessionUser.email);
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
@@ -119,53 +121,65 @@ async function renderEvents() {
     adminState.events = Array.isArray(data) ? data : [];
     renderEventsTable();
   } catch {
-    setContent('<div class="db-loading">Gagal memuat event. Pastikan SCRIPT_URL sudah benar.</div>');
+    setContent('<div class="db-loading">Gagal memuat event. Periksa deployment Apps Script.</div>');
   }
 }
 
 function renderEventsTable() {
   const rows = adminState.events.map(ev => `
     <tr>
-      <td>${sanitize(ev.nama)}</td>
-      <td><span class="event-badge badge-openlab">${sanitize(ev.kategori)}</span></td>
-      <td>${formatDate(ev.tanggal)}</td>
-      <td>${sanitize(ev.lokasi || "—")}</td>
-      <td>${sanitize(ev.kuota || "—")}</td>
-      <td>
-        <span class="event-badge ${/buka|open/i.test(ev.status || "") ? "badge-open" : "badge-closed"}">
-          ${/buka|open/i.test(ev.status || "") ? "Buka" : "Tutup"}
-        </span>
-      </td>
-    </tr>
-  `).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:32px;">Belum ada event.</td></tr>`;
-
+      <td>${sanitize(ev.nama)}</td><td>${sanitize(ev.kategori || "—")}</td>
+      <td>${formatDate(ev.tanggal)}</td><td>${sanitize(ev.lokasi || "—")}</td>
+      <td>${sanitize(ev.kuota || "—")}</td><td>${sanitize(ev.status || "—")}</td>
+      <td><button class="btn btn-outline admin-btn-sm" onclick="editEvent('${sanitize(String(ev.id))}')">Edit</button></td>
+    </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
   setContent(`
-    <div>
-      <div class="db-section-title">
-        Daftar Event (${adminState.events.length})
-        <a href="https://docs.google.com/spreadsheets/d/${getSpreadsheetId()}/edit" target="_blank"
-           class="btn btn-outline admin-btn-sm">Tambah via Spreadsheet ↗</a>
-      </div>
-      <div class="table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Nama Event</th>
-              <th>Kategori</th>
-              <th>Tanggal</th>
-              <th>Lokasi</th>
-              <th>Kuota</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <p style="margin-top:12px;font-size:.78rem;color:var(--text-dim);">
-        Untuk menambah/mengubah event, edit langsung di Google Spreadsheet sheet <strong>Events</strong>.
-      </p>
+    <section><div class="db-section-title">Kelola Event
+      <button class="btn btn-red admin-btn-sm" onclick="showEventForm()">+ Tambah Event</button>
+    </div><div id="eventFormWrap"></div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Nama Event</th><th>Kategori</th><th>Tanggal</th><th>Lokasi</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${rows}</tbody></table></div></section>`);
+}
+
+window.showEventForm = function(id = "") {
+  const ev = adminState.events.find(x => String(x.id) === String(id)) || {};
+  const wrap = document.getElementById("eventFormWrap");
+  if (!wrap) return;
+  wrap.innerHTML = `<form id="eventEditor" style="margin:16px 0;padding:20px;border:1px solid var(--dark-4);border-radius:var(--radius);background:var(--dark-2);">
+    <h3 style="margin-bottom:16px;">${id ? "Edit Event" : "Tambah Event"}</h3>
+    <input type="hidden" name="id" value="${sanitize(ev.id || "")}">
+    <div class="admin-editor-grid">
+      ${editorField("nama","Nama event",ev.nama,"text",true)}
+      ${editorField("kategori","Kategori",ev.kategori,"text",true)}
+      ${editorField("tanggal","Tanggal",String(ev.tanggal || "").slice(0,10),"date",true)}
+      ${editorField("waktu","Waktu",ev.waktu)}
+      ${editorField("lokasi","Lokasi",ev.lokasi,"text",true)}
+      ${editorField("kuota","Kuota peserta",ev.kuota,"number")}
+      ${editorField("biaya","Biaya",ev.biaya)}
+      ${editorField("status","Status (Buka/Tutup)",ev.status || "Buka")}
+      ${editorField("gambar","URL gambar",ev.gambar,"url")}
     </div>
-  `);
+    <label class="admin-editor-label">Deskripsi<textarea name="deskripsi" rows="3">${sanitize(ev.deskripsi || "")}</textarea></label>
+    <label class="admin-editor-label">Syarat<textarea name="syarat" rows="2">${sanitize(ev.syarat || "")}</textarea></label>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-red" type="submit">Simpan Event</button><button class="btn btn-outline" type="button" onclick="document.getElementById('eventFormWrap').innerHTML=''">Batal</button></div>
+  </form>`;
+  document.getElementById("eventEditor").addEventListener("submit", async e => {
+    e.preventDefault();
+    const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
+    try {
+      const result = await apiFetch({ action: payload.id ? "updateEvent" : "addEvent", ...payload });
+      if (!result.success) throw new Error(result.message || "Gagal menyimpan event.");
+      toast("Event berhasil disimpan.", "success"); renderEvents();
+    } catch (err) { toast(err.message || "Gagal menyimpan event.", "error"); }
+  });
+};
+window.editEvent = id => window.showEventForm(id);
+
+function editorField(name,label,value,type="text",required=false) {
+  return `<label class="admin-editor-label">${label}${required ? " *" : ""}
+    <input name="${name}" type="${type}" value="${sanitize(value ?? "")}" ${required ? "required" : ""}>
+  </label>`;
 }
 
 /* --- APPLICATIONS --- */
@@ -296,39 +310,55 @@ async function renderTrainers() {
   try {
     const data = await apiFetch({ action: "getTrainers" });
     adminState.trainers = Array.isArray(data) ? data : [];
-    const rows = adminState.trainers.map(t => `
-      <tr>
-        <td>${sanitize(t.nama)}</td>
-        <td>${sanitize(t.jabatan || "—")}</td>
-        <td>${sanitize(t.keahlian || "—")}</td>
-      </tr>
-    `).join("") || `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:32px;">Belum ada trainer.</td></tr>`;
-
-    setContent(`
-      <div>
-        <div class="db-section-title">
-          Daftar Trainer (${adminState.trainers.length})
-          <a href="https://docs.google.com/spreadsheets/d/${getSpreadsheetId()}/edit" target="_blank"
-             class="btn btn-outline admin-btn-sm">Edit via Spreadsheet ↗</a>
-        </div>
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th></tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>
-    `);
+    renderTrainersTable();
   } catch {
-    setContent('<div class="db-loading">Gagal memuat data trainer.</div>');
+    setContent('<div class="db-loading">Gagal memuat trainer. Periksa deployment Apps Script.</div>');
   }
 }
 
-function getSpreadsheetId() {
-  return "GANTI_DENGAN_ID_SPREADSHEET_KAMU";
+function renderTrainersTable() {
+  const rows = adminState.trainers.map(t => `<tr>
+    <td>${sanitize(t.nama)}</td><td>${sanitize(t.jabatan || "—")}</td>
+    <td>${sanitize(t.keahlian || "—")}</td>
+    <td><button class="btn btn-outline admin-btn-sm" onclick="editTrainer('${sanitize(String(t.id))}')">Edit</button></td>
+  </tr>`).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
+  setContent(`<section><div class="db-section-title">Kelola Trainer
+    <button class="btn btn-red admin-btn-sm" onclick="showTrainerForm()">+ Tambah Trainer</button></div>
+    <div id="trainerFormWrap"></div><div class="table-wrap"><table class="admin-table">
+    <thead><tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>
+    </table></div></section>`);
 }
+
+window.showTrainerForm = function(id = "") {
+  const t = adminState.trainers.find(x => String(x.id) === String(id)) || {};
+  const wrap = document.getElementById("trainerFormWrap");
+  if (!wrap) return;
+  wrap.innerHTML = `<form id="trainerEditor" style="margin:16px 0;padding:20px;border:1px solid var(--dark-4);border-radius:var(--radius);background:var(--dark-2);">
+    <h3 style="margin-bottom:16px;">${id ? "Edit Trainer" : "Tambah Trainer"}</h3>
+    <input type="hidden" name="id" value="${sanitize(t.id || "")}">
+    <div class="admin-editor-grid">
+      ${editorField("nama","Nama trainer",t.nama,"text",true)}
+      ${editorField("jabatan","Jabatan",t.jabatan,"text",true)}
+      ${editorField("keahlian","Keahlian",t.keahlian,"text",true)}
+      ${editorField("foto","URL foto",t.foto,"url")}
+      ${editorField("urutan","Urutan tampil",t.urutan || "1","number")}
+    </div>
+    <label class="admin-editor-label">Bio<textarea name="bio" rows="3">${sanitize(t.bio || "")}</textarea></label>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-red" type="submit">Simpan Trainer</button><button class="btn btn-outline" type="button" onclick="document.getElementById('trainerFormWrap').innerHTML=''">Batal</button></div>
+  </form>`;
+  document.getElementById("trainerEditor").addEventListener("submit", async e => {
+    e.preventDefault();
+    const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
+    try {
+      const result = await apiFetch({ action: payload.id ? "updateTrainer" : "addTrainer", ...payload });
+      if (!result.success) throw new Error(result.message || "Gagal menyimpan trainer.");
+      toast("Trainer berhasil disimpan.", "success"); renderTrainers();
+    } catch (err) { toast(err.message || "Gagal menyimpan trainer.", "error"); }
+  });
+};
+window.editTrainer = id => window.showTrainerForm(id);
+
+function getSpreadsheetId() { return "1seqC8RhKYpAZ4FQRjhkz3E7KL76ZfyW9mbzkEsseUFY"; }
 
 /* === SIDEBAR === */
 function initSidebar() {
