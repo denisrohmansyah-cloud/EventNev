@@ -391,6 +391,7 @@ function openEventModal(ev) {
       </div>
       <p>${sanitize(ev.deskripsi || "")}</p>
       ${ev.syarat ? `<p><strong>Syarat:</strong> ${sanitize(ev.syarat)}</p>` : ""}
+      ${ev.persyaratanFoto ? `<div class="requirement-upload" style="margin:16px 0;padding:14px;border:1px solid var(--dark-4);border-radius:12px;"><label for="requirementPhoto" style="display:block;font-weight:600;margin-bottom:8px;">Foto persyaratan: ${sanitize(ev.persyaratanFoto)}</label><input id="requirementPhoto" type="file" accept="image/png,image/jpeg,image/webp" style="display:block;max-width:100%;"><small>PNG, JPG/JPEG, atau WEBP. Maksimal 5 MB; akan dikompres otomatis menjadi di bawah 1 MB.</small><div id="requirementPhotoStatus" aria-live="polite" style="margin-top:6px;"></div></div>` : ""}
       <div class="modal-actions">
         ${isOpen
           ? `<button class="btn btn-red" id="daftarBtn" data-event-id="${sanitize(String(ev.id || ev.nama))}">
@@ -424,15 +425,34 @@ async function handleDaftar(ev) {
   }
 
   const btn = document.getElementById("daftarBtn");
+  const photoInput = document.getElementById("requirementPhoto");
+  const photoFile = photoInput?.files?.[0] || null;
+  if (ev.persyaratanFoto && !photoFile) {
+    toast("Unggah foto persyaratan terlebih dahulu.", "error");
+    photoInput?.focus();
+    return;
+  }
+  if (photoFile && photoFile.size > 5 * 1024 * 1024) {
+    toast("Ukuran foto maksimal 5 MB.", "error");
+    return;
+  }
   if (btn) { btn.disabled = true; btn.textContent = "Memproses…"; }
 
   try {
+    let requirementFileId = "";
+    if (photoFile) {
+      const status = document.getElementById("requirementPhotoStatus");
+      if (status) status.textContent = "Mengompres dan mengunggah foto…";
+      requirementFileId = await uploadRequirementPhoto(photoFile, ev);
+    }
     const data = await apiFetch({
       action: "daftar",
       userId: state.user.id || state.user.email,
       eventId: ev.id || ev.nama,
       nama: state.user.nama,
       email: state.user.email,
+      requirementFileId: requirementFileId,
+      requirementFileName: photoFile ? photoFile.name : ""
     });
 
     if (data.success) {
@@ -447,6 +467,56 @@ async function handleDaftar(ev) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = "Daftar Sekarang ↗"; }
   }
+}
+
+
+async function uploadRequirementPhoto(file, ev) {
+  const allowed = ["image/png", "image/jpeg", "image/webp"];
+  if (!allowed.includes(file.type)) throw new Error("Format foto harus PNG, JPG/JPEG, atau WEBP.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Ukuran foto awal maksimal 5 MB.");
+  const img = await new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(image); };
+    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("File foto tidak dapat dibaca.")); };
+    image.src = objectUrl;
+  });
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Browser tidak mendukung kompresi gambar.");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  let quality = 0.82;
+  let blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+  while (blob && blob.size >= 950 * 1024 && quality > 0.25) {
+    quality = Math.max(0.25, quality - 0.1);
+    blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+  }
+  if (!blob || blob.size >= 1024 * 1024) throw new Error("Foto belum bisa dikompres di bawah 1 MB. Coba gambar lain.");
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1]);
+    reader.onerror = () => reject(new Error("Gagal membaca foto."));
+    reader.readAsDataURL(blob);
+  });
+  const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "uploadRequirementPhoto",
+      userId: state.user.id || state.user.email,
+      email: state.user.email || "",
+      eventId: String(ev.id || ev.nama),
+      fileName: file.name.replace(/\.[^.]+$/, ".jpg"),
+      mimeType: "image/jpeg",
+      base64
+    })
+  });
+  const result = await response.json();
+  if (!result.success || !result.fileId) throw new Error(result.message || "Upload foto gagal.");
+  return result.fileId;
 }
 
 /* =========================================================
