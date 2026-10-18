@@ -1275,3 +1275,57 @@ p  { font-size: 1rem; line-height: 1.7; }
   object-fit: contain !important;
   object-position: center !important;
 }
+
+
+/* Correct event detail modal: #modalContent is the actual modal panel */
+#eventModal {
+  padding: 12px !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#eventModal #modalContent {
+  position: relative !important;
+  width: min(520px, calc(100vw - 24px)) !important;
+  max-width: 520px !important;
+  max-height: 88vh !important;
+  overflow: auto !important;
+  margin: 0 auto !important;
+  border: 1px solid var(--dark-4) !important;
+  border-radius: var(--radius-xl) !important;
+  background: var(--dark-2) !important;
+}
+#eventModal #modalContent > .modal-img {
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: var(--dark-3) !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 360px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+#eventModal #modalContent > .modal-body {
+  padding: 20px !important;
+}
+@media (max-width: 640px) {
+  #eventModal #modalContent {
+    width: min(420px, calc(100vw - 24px)) !important;
+    max-height: 90dvh !important;
+  }
+  #eventModal #modalContent > .modal-img img {
+    max-height: 300px !important;
+  }
+  #eventModal #modalContent > .modal-body {
+    padding: 15px !important;
+  }
+}
