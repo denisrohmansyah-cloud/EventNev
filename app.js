@@ -460,7 +460,7 @@ function openEventModal(ev) {
       <div class="modal-meta">
         ${ev.tanggal ? `<div class="modal-meta-row">📅 ${formatDate(ev.tanggal)}</div>` : ""}
         ${ev.lokasi ? `<div class="modal-meta-row">📍 ${sanitize(ev.lokasi)}</div>` : ""}
-        ${ev.waktu ? `<div class="modal-meta-row">🕐 ${sanitize(ev.waktu)}</div>` : ""}
+        ${ev.waktu ? `<div class="modal-meta-row">🕐 ${sanitize(formatEventTime(ev.waktu))}</div>` : ""}
         ${ev.kuota ? `<div class="modal-meta-row">👥 Kuota: ${sanitize(String(ev.kuota))} peserta</div>` : ""}
         ${ev.biaya ? `<div class="modal-meta-row">💰 ${sanitize(ev.biaya)}</div>` : `<div class="modal-meta-row">💰 Gratis</div>`}
       </div>
