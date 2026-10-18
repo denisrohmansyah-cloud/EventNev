@@ -131,7 +131,7 @@ function renderEventsTable() {
       <td>${sanitize(ev.nama)}</td><td>${sanitize(ev.kategori || "—")}</td>
       <td>${formatDate(ev.tanggal)}</td><td>${sanitize(ev.lokasi || "—")}</td>
       <td>${sanitize(ev.kuota || "—")}</td><td>${sanitize(ev.status || "—")}</td>
-      <td><button class="btn btn-outline admin-btn-sm" onclick="editEvent('${sanitize(String(ev.id))}')">Edit</button></td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editEvent('${sanitize(String(ev.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteEvent('${sanitize(String(ev.id))}','${sanitize(ev.nama)}')">Hapus</button></div></td>
     </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
   setContent(`
     <section><div class="db-section-title">Kelola Event
@@ -340,7 +340,7 @@ function renderTrainersTable() {
   const rows = adminState.trainers.map(t => `<tr>
     <td>${sanitize(t.nama)}</td><td>${sanitize(t.jabatan || "—")}</td>
     <td>${sanitize(t.keahlian || "—")}</td>
-    <td><button class="btn btn-outline admin-btn-sm" onclick="editTrainer('${sanitize(String(t.id))}')">Edit</button></td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editTrainer('${sanitize(String(t.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteTrainer('${sanitize(String(t.id))}','${sanitize(t.nama)}')">Hapus</button></div></td>
   </tr>`).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
   setContent(`<section><div class="db-section-title">Kelola Trainer
     <button class="btn btn-red admin-btn-sm" onclick="showTrainerForm()">+ Tambah Trainer</button></div>
@@ -381,6 +381,17 @@ window.showTrainerForm = function(id = "") {
   });
 };
 window.editTrainer = id => window.showTrainerForm(id);
+
+window.deleteTrainer = async function(id, name) {
+  if (!id) return toast("ID trainer tidak ditemukan.", "error");
+  if (!confirm('Hapus trainer "' + name + '"? Tindakan ini tidak dapat dibatalkan.')) return;
+  try {
+    const result = await apiFetch({ action: "deleteTrainer", trainerId: id });
+    if (!result || !result.success) throw new Error(result && result.message ? result.message : "Trainer gagal dihapus.");
+    toast("Trainer berhasil dihapus.", "success");
+    await renderTrainers();
+  } catch (err) { toast(err.message || "Gagal menghapus trainer.", "error"); }
+};
 
 async function uploadAdminImage(file, kind) {
   const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Gagal membaca gambar.")); reader.readAsDataURL(file); });
