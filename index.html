@@ -4,117 +4,90 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Network Evolution — Portal Kegiatan & Pengembangan Karier</title><meta name="description" content="Temukan Open Lab, Bootcamp, dan Open Recruitment NEV. Akun terbuka untuk mahasiswa maupun peserta umum."><meta name="theme-color" content="#e1262f"><meta property="og:title" content="Network Evolution — Portal Kegiatan NEV"><meta property="og:description" content="Daftar kegiatan NEV dan pantau status pendaftaranmu."><meta property="og:image" content="https://denisrohmansyah-cloud.github.io/nevhub-student-portal/nev-logo.png"><meta property="og:type" content="website"><link rel="icon" type="image/png" href="nev-logo.png"><link rel="stylesheet" href="styles.css">
 
-<!-- Find Us Widget Style -->
 <style>
-  .find-us-widget {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    width: 232px;
-    background: #111111;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 14px 14px 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  }
+/* ── Find Us — inline footer column ── */
+.footer-findus-col { display: flex; flex-direction: column; gap: 0; }
 
-  .find-us-widget__header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
+.footer-findus-col h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text, #e8e8e8);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1262f;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
 
-  .find-us-widget__title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    color: #e8e8e8;
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
+.footer-findus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
 
-  .find-us-widget__line {
-    flex: 1;
-    height: 1px;
-    background: #e1262f;
-    opacity: 0.75;
-  }
+.footer-findus-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  padding: 9px 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  min-width: 0;
+}
 
-  .find-us-widget__grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
+.footer-findus-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.14);
+}
 
-  .find-us-widget__card {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
-    padding: 8px 9px;
-    text-decoration: none;
-    color: inherit;
-    transition: background 0.15s, border-color 0.15s;
-    min-width: 0;
-  }
+.footer-findus-card:hover .ffc-icon { color: #c0c0c0; }
 
-  .find-us-widget__card:hover {
-    background: #222222;
-    border-color: #3a3a3a;
-  }
+.ffc-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: #555;
+  transition: color 0.15s;
+}
 
-  .find-us-widget__card:hover .find-us-widget__icon {
-    color: #c0c0c0;
-  }
+.ffc-info { min-width: 0; }
 
-  .find-us-widget__icon {
-    flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    color: #666666;
-    transition: color 0.15s;
-  }
+.ffc-platform {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e0e0e0;
+  line-height: 1;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .find-us-widget__info { min-width: 0; }
+.ffc-handle {
+  font-size: 8px;
+  color: #666;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .find-us-widget__platform {
-    font-size: 8.5px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #e8e8e8;
-    line-height: 1;
-    margin-bottom: 2.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+@media (max-width: 640px) {
+  .footer-findus-grid { grid-template-columns: 1fr; }
+}
 
-  .find-us-widget__handle {
-    font-size: 7.5px;
-    color: #888888;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  @media (max-width: 480px) {
-    .find-us-widget {
-      bottom: 16px;
-      right: 16px;
-      width: 200px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .find-us-widget__card { transition: none; }
-  }
+@media (prefers-reduced-motion: reduce) {
+  .footer-findus-card { transition: none; }
+}
 </style>
 </head>
 
@@ -143,6 +116,8 @@
 
 <footer id="contact" class="site-footer">
   <div class="footer-main">
+
+    <!-- Brand -->
     <div class="footer-brand">
       <a class="brand" href="#hero">
         <img class="brand-logo" src="nev-logo.png" alt="Logo NEV">
@@ -151,24 +126,84 @@
       <p>Ruang untuk belajar, berkolaborasi, dan bertumbuh di bidang teknologi.</p>
       <div class="footer-tags"><span>Learn</span><span>Connect</span><span>Grow</span></div>
     </div>
+
+    <!-- Jelajahi — ditambah Portal admin -->
     <div class="footer-column">
       <h3>Jelajahi</h3>
       <a href="#kegiatan">Daftar kegiatan</a>
       <a href="login.html">Buat akun peserta</a>
       <a href="dashboard.html" id="footerActivityLink">Dashboard peserta</a>
-    </div>
-    <div class="footer-column">
-      <h3>Portal</h3>
       <a href="admin.html">Portal admin</a>
-      <a href="https://networkevolution.my.id/" target="_blank" rel="noopener noreferrer">Tentang Network Evolution</a>
-      <a href="#kegiatan">Open Lab · Bootcamp · Recruitment</a>
     </div>
-    <div class="footer-column">
-      <h3>Kontak</h3>
-      <a href="mailto:nevpurwokerto@gmail.com">Email</a>
-      <a href="https://instagram.com/nevtelkom_tup?xtok=dzJzbXl6d3RzcGZk" target="_blank" rel="noopener noreferrer">Instagram</a>
-      <a href="https://linktr.ee/NetworkEvolutionTUP?utm_source=linktree_profile_share&ltsid=480b9ca0-f0f2-4b72-bcd2-4295f55273b3" target="_blank" rel="noopener noreferrer">LinkTree</a>
+
+    <!-- Find Us — menggantikan kolom Portal & Kontak -->
+    <div class="footer-column footer-findus-col">
+      <h3>Find Us</h3>
+      <div class="footer-findus-grid">
+
+        <!-- Instagram -->
+        <a class="footer-findus-card"
+           href="https://instagram.com/nevtelkom_tup"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="Instagram @nevtelkom_tup">
+          <svg class="ffc-icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+          </svg>
+          <div class="ffc-info">
+            <div class="ffc-platform">Instagram</div>
+            <div class="ffc-handle">@nevtelkom_tup</div>
+          </div>
+        </a>
+
+        <!-- GitHub -->
+        <a class="footer-findus-card"
+           href="https://github.com/netlabNEVPurwokerto-Repo"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="GitHub netlabNEVPurwokerto-Repo">
+          <svg class="ffc-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <div class="ffc-info">
+            <div class="ffc-platform">GitHub</div>
+            <div class="ffc-handle">netlabNEVPurwokerto</div>
+          </div>
+        </a>
+
+        <!-- LinkedIn -->
+        <a class="footer-findus-card"
+           href="https://linkedin.com/company/network-evolution-laboratory"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="LinkedIn Network Evolution Laboratory">
+          <svg class="ffc-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+          <div class="ffc-info">
+            <div class="ffc-platform">LinkedIn</div>
+            <div class="ffc-handle">Network Evolution</div>
+          </div>
+        </a>
+
+        <!-- YouTube -->
+        <a class="footer-findus-card"
+           href="https://youtube.com/@NetworkEvolutionTUP"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="YouTube Network Evolution TUP">
+          <svg class="ffc-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+          <div class="ffc-info">
+            <div class="ffc-platform">YouTube</div>
+            <div class="ffc-handle">Network Evo TUP</div>
+          </div>
+        </a>
+
+      </div>
     </div>
+
   </div>
   <div class="footer-bottom">
     <span>© 2026 Network Evolution · Portal kegiatan NEV</span>
@@ -176,79 +211,7 @@
   </div>
 </footer>
 
-<div class="modal-backdrop" id="eventModal" hidden><section class="modal"><button class="modal-close" id="closeModal" aria-label="Tutup">×</button><div id="modalContent"></div></section></div>
-<div class="toast" id="toast" role="status"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-<script src="scanner.js"></script>
-<script src="app.js?v=bf008284"></script>
-
-<!-- Find Us Widget (pojok kanan bawah) -->
-<aside class="find-us-widget" aria-label="Media sosial Network Evolution">
-  <div class="find-us-widget__header">
-    <span class="find-us-widget__title">Find Us</span>
-    <span class="find-us-widget__line" aria-hidden="true"></span>
-  </div>
-  <div class="find-us-widget__grid">
-
-    <a class="find-us-widget__card"
-       href="https://instagram.com/nevtelkom_tup"
-       target="_blank" rel="noopener noreferrer"
-       aria-label="Instagram @nevtelkom_tup">
-      <svg class="find-us-widget__icon" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-        <circle cx="12" cy="12" r="4"/>
-        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
-      </svg>
-      <div class="find-us-widget__info">
-        <div class="find-us-widget__platform">Instagram</div>
-        <div class="find-us-widget__handle">@nevtelkom_tup</div>
-      </div>
-    </a>
-
-    <a class="find-us-widget__card"
-       href="https://github.com/netlabNEVPurwokerto-Repo"
-       target="_blank" rel="noopener noreferrer"
-       aria-label="GitHub netlabNEVPurwokerto-Repo">
-      <svg class="find-us-widget__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
-      </svg>
-      <div class="find-us-widget__info">
-        <div class="find-us-widget__platform">GitHub</div>
-        <div class="find-us-widget__handle">netlabNEVPurwokerto</div>
-      </div>
-    </a>
-
-    <a class="find-us-widget__card"
-       href="https://linkedin.com/company/network-evolution-laboratory"
-       target="_blank" rel="noopener noreferrer"
-       aria-label="LinkedIn Network Evolution Laboratory">
-      <svg class="find-us-widget__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-      </svg>
-      <div class="find-us-widget__info">
-        <div class="find-us-widget__platform">LinkedIn</div>
-        <div class="find-us-widget__handle">Network Evolution</div>
-      </div>
-    </a>
-
-    <a class="find-us-widget__card"
-       href="https://youtube.com/@NetworkEvolutionTUP"
-       target="_blank" rel="noopener noreferrer"
-       aria-label="YouTube Network Evolution TUP">
-      <svg class="find-us-widget__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-      </svg>
-      <div class="find-us-widget__info">
-        <div class="find-us-widget__platform">YouTube</div>
-        <div class="find-us-widget__handle">Network Evo TUP</div>
-      </div>
-    </a>
-
-  </div>
-</aside>
+<div class="modal-backdrop" id="eventModal" hidden><section class="modal"><button class="modal-close" id="closeModal" aria-label="Tutup">×</button><div id="modalContent"></div></section></div><div class="toast" id="toast" role="status"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script><script src="scanner.js"></script><script src="app.js?v=bf008284"></script>
 
 <div class="nev-loading-overlay" id="nevPageLoader" role="status" aria-live="polite" aria-label="Memuat halaman">
 <div class="nev-loading-card">
