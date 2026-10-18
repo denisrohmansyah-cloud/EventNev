@@ -209,6 +209,7 @@ function doGet(e) {
       case "getMyCertificates": result = handleGetMyCertificates(params); break;
       case "absen":           result = handleAbsen(params); break;
       // Admin
+      case "getAllApplications": result = adminGetAllApplications(params); break;
       case "getUsers":        result = adminGetUsers(params); break;
       case "updateStatus":    result = adminUpdateStatus(params); break;
       case "deleteApp":       result = adminDeleteApp(params); break;
@@ -544,6 +545,11 @@ function handleAbsen(p) {
 /* =========================================================
    ADMIN
    ========================================================= */
+function adminGetAllApplications(p) {
+  const sheet = getSheet(SHEET.APPLICATIONS);
+  return sheetToObjects(sheet).filter(a => a.id);
+}
+
 function adminGetUsers(p) {
   // Tambahkan validasi admin jika perlu
   const sheet = getSheet(SHEET.USERS);
