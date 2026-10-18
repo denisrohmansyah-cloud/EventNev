@@ -1255,3 +1255,23 @@ p  { font-size: 1rem; line-height: 1.7; }
   }
   #eventModal .modal-body { padding: 13px !important; }
 }
+
+/* Event listing: keep portrait posters from stretching the event cards */
+.event-card-img {
+  height: 250px !important;
+  max-height: 250px !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  background: var(--dark-3) !important;
+}
+.event-card-img img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+@media (max-width: 640px) {
+  .event-card-img {
+    height: 210px !important;
+    max-height: 210px !important;
+  }
+}
