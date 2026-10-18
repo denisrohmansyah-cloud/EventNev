@@ -533,3 +533,7 @@
   .db-event-image { aspect-ratio: 16 / 9; min-height: 0; }
   .db-event-content { padding: 15px; }
 }
+
+/* Full poster display: image controls its own height */
+.db-event-image, .db-event-image-button { display:block; width:100%; height:auto !important; min-height:0 !important; aspect-ratio:auto !important; padding:0; overflow:visible; background:#101014; }
+.db-event-image img, .db-event-image-button img { display:block; width:100%; height:auto !important; max-height:none !important; object-fit:contain !important; object-position:center; }
