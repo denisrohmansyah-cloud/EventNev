@@ -162,6 +162,7 @@ window.showEventForm = function(id = "") {
     </div>
     <label class="admin-editor-label">Deskripsi<textarea name="deskripsi" rows="3">${sanitize(ev.deskripsi || "")}</textarea></label>
     <label class="admin-editor-label">Syarat<textarea name="syarat" rows="2">${sanitize(ev.syarat || "")}</textarea></label>
+    <label class="admin-editor-label">Persyaratan foto peserta (kosongkan jika tidak wajib)<input name="persyaratanFoto" type="text" value="${sanitize(ev.persyaratanFoto || "")}" placeholder="Contoh: Foto KTM atau kartu identitas"></label>
     <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-red" type="submit">Simpan Event</button><button class="btn btn-outline" type="button" onclick="document.getElementById('eventFormWrap').innerHTML=''">Batal</button></div>
   </form>`;
   document.getElementById("eventEditor").addEventListener("submit", async e => {
