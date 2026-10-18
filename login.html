@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#E1262F" />
+  <meta name="theme-color" content="#B81E26" />
   <title>Masuk / Daftar — EventNev</title>
   <link rel="icon" href="nev-logo.png" type="image/png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --red: #E1262F;
-      --red-dark: #b81e26;
-      --white: #ffffff;
+      --red:      #B81E26;
+      --red-dark: #941720;
+      --red-bg:   rgba(184,30,38,.05);
+      --red-ring: rgba(184,30,38,.12);
+      --red-line: rgba(184,30,38,.2);
+      --white:    #ffffff;
       --gray-100: #f2f2f2;
       --gray-300: #d0d0d0;
       --gray-500: #888;
       --gray-700: #444;
       --gray-900: #111;
-      --radius: 10px;
+      --radius:   10px;
     }
 
     body {
@@ -29,7 +32,7 @@
       color: var(--gray-900);
     }
 
-    /* LEFT PANEL */
+    /* ── LEFT PANEL ── */
     .left {
       width: 48%;
       background: var(--red);
@@ -39,6 +42,7 @@
       justify-content: center;
       padding: 60px 52px;
       overflow: hidden;
+      flex-shrink: 0;
     }
     .left::before, .left::after {
       content: '';
@@ -51,7 +55,7 @@
 
     .left-logo {
       display: flex; align-items: center; gap: 12px;
-      margin-bottom: 56px; position: relative;
+      margin-bottom: 52px; position: relative;
     }
     .left-logo img {
       width: 44px; height: 44px; border-radius: 10px;
@@ -59,13 +63,13 @@
     }
     .left-logo-text { color: var(--white); line-height: 1.2; }
     .left-logo-text strong { font-size: 1rem; font-weight: 700; display: block; }
-    .left-logo-text span { font-size: .75rem; opacity: .8; }
+    .left-logo-text span   { font-size: .75rem; opacity: .8; }
 
     .left h1 {
       color: var(--white);
       font-size: clamp(1.6rem, 2.4vw, 2.4rem);
       font-weight: 800; line-height: 1.25;
-      margin-bottom: 20px; position: relative;
+      margin-bottom: 18px; position: relative;
     }
     .left p {
       color: rgba(255,255,255,.85);
@@ -82,7 +86,7 @@
     }
     .stat-item span { font-size: .9rem; font-weight: 500; }
 
-    /* RIGHT PANEL */
+    /* ── RIGHT PANEL ── */
     .right {
       flex: 1; display: flex; flex-direction: column;
       justify-content: center; padding: 48px 56px;
@@ -91,13 +95,13 @@
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
       color: var(--gray-500); font-size: .85rem;
-      text-decoration: none; margin-bottom: 36px; transition: color .2s;
+      text-decoration: none; margin-bottom: 32px; transition: color .2s;
     }
     .back-link:hover { color: var(--red); }
 
     /* tabs */
     .tab-row {
-      display: flex; margin-bottom: 28px;
+      display: flex; margin-bottom: 26px;
       border-bottom: 2px solid var(--gray-100);
     }
     .tab-btn {
@@ -118,29 +122,26 @@
     .panel.active { display: block; }
 
     .panel-title { font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; }
-    .panel-sub {
-      color: var(--gray-500); font-size: .9rem;
-      margin-bottom: 28px; line-height: 1.5;
-    }
+    .panel-sub   { color: var(--gray-500); font-size: .9rem; margin-bottom: 26px; line-height: 1.5; }
 
     /* form fields */
-    .field { margin-bottom: 18px; }
+    .field { margin-bottom: 16px; }
     .field label {
       display: block; font-size: .85rem;
       font-weight: 600; color: var(--gray-700); margin-bottom: 7px;
     }
     .field input, .field select {
-      width: 100%; padding: 13px 16px;
+      width: 100%; padding: 12px 16px;
       border: 1.5px solid var(--gray-300);
       border-radius: var(--radius);
-      font-size: .95rem; color: var(--gray-900);
+      font-size: .92rem; color: var(--gray-900);
       background: var(--white); outline: none;
       transition: border-color .2s, box-shadow .2s;
       -webkit-appearance: none;
     }
     .field input:focus, .field select:focus {
       border-color: var(--red);
-      box-shadow: 0 0 0 3px rgba(225,38,47,.1);
+      box-shadow: 0 0 0 3px var(--red-ring);
     }
     .field input::placeholder { color: var(--gray-300); }
 
@@ -153,19 +154,25 @@
       font-size: 1.1rem; color: var(--gray-500); line-height: 1;
     }
 
+    .field-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .field-row .field { margin-bottom: 0; }
+
     /* peserta cards */
     .peserta-label {
       display: block; font-size: .85rem;
       font-weight: 600; color: var(--gray-700); margin-bottom: 10px;
     }
     .peserta-cards {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 12px; margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 6px;
     }
     .peserta-card {
       border: 1.5px solid var(--gray-300);
       border-radius: var(--radius);
-      padding: 14px 16px; cursor: pointer;
+      padding: 12px 14px; cursor: pointer;
       transition: border-color .2s, background .2s;
       position: relative; user-select: none;
     }
@@ -174,20 +181,42 @@
     }
     .peserta-card.selected {
       border-color: var(--red);
-      background: rgba(225,38,47,.04);
+      background: var(--red-bg);
     }
-    .peserta-card-icon { font-size: 1.4rem; margin-bottom: 6px; }
-    .peserta-card-name { font-size: .9rem; font-weight: 700; color: var(--gray-900); }
-    .peserta-card-desc { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
+    .peserta-card-icon { font-size: 1.3rem; margin-bottom: 5px; }
+    .peserta-card-name { font-size: .82rem; font-weight: 700; color: var(--gray-900); }
+    .peserta-card-desc { font-size: .72rem; color: var(--gray-500); margin-top: 2px; line-height: 1.3; }
     .peserta-check {
-      position: absolute; top: 10px; right: 10px;
-      width: 18px; height: 18px; border-radius: 50%;
+      position: absolute; top: 8px; right: 8px;
+      width: 16px; height: 16px; border-radius: 50%;
       border: 2px solid var(--gray-300);
       display: flex; align-items: center; justify-content: center;
-      transition: all .2s; font-size: .6rem; color: transparent;
+      transition: all .2s; font-size: .55rem; color: transparent;
     }
     .peserta-card.selected .peserta-check {
       background: var(--red); border-color: var(--red); color: white;
+    }
+
+    /* extra data sections */
+    .extra-section {
+      overflow: hidden;
+      max-height: 800px;
+      opacity: 1;
+      transition: max-height .4s ease, opacity .3s ease;
+    }
+    .extra-section.hidden {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .section-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 16px 0 14px;
+      font-size: .75rem; font-weight: 700;
+      color: var(--red); text-transform: uppercase; letter-spacing: .06em;
+    }
+    .section-divider::before, .section-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--red-line);
     }
 
     /* buttons */
@@ -197,63 +226,41 @@
       border: none; border-radius: var(--radius);
       font-size: .95rem; font-weight: 700;
       cursor: pointer; transition: background .2s, transform .1s;
-      margin-top: 4px;
+      margin-top: 6px;
     }
-    .btn-primary:hover { background: var(--red-dark); }
+    .btn-primary:hover  { background: var(--red-dark); }
     .btn-primary:active { transform: scale(.98); }
 
-    .divider {
-      display: flex; align-items: center; gap: 12px;
-      color: var(--gray-300); font-size: .8rem; margin: 18px 0;
-    }
-    .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px; background: var(--gray-100);
-    }
-
-    .btn-google {
-      width: 100%; padding: 13px;
-      background: var(--white);
-      border: 1.5px solid var(--gray-300);
-      border-radius: var(--radius);
-      font-size: .9rem; font-weight: 600;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: border-color .2s, background .2s;
-      color: var(--gray-900);
-    }
-    .btn-google:hover { border-color: #4285F4; background: #f7f9ff; }
-    .google-icon { width: 18px; height: 18px; }
-
     .switch-text {
-      text-align: center; margin-top: 24px;
+      text-align: center; margin-top: 22px;
       font-size: .85rem; color: var(--gray-500);
     }
-    .switch-text a {
-      color: var(--red); font-weight: 600; text-decoration: none;
-    }
+    .switch-text a { color: var(--red); font-weight: 600; text-decoration: none; }
     .switch-text a:hover { text-decoration: underline; }
 
     /* responsive */
-    @media (max-width: 768px) {
+    @media (max-width: 820px) {
       body { flex-direction: column; }
-      .left { width: 100%; padding: 32px 24px; min-height: auto; }
+      .left { width: 100%; padding: 32px 24px; }
       .left::after { display: none; }
       .left p { display: none; }
-      .left-logo { margin-bottom: 24px; }
-      .left h1 { font-size: 1.35rem; margin-bottom: 16px; }
-      .right { padding: 28px 20px; }
+      .left-logo { margin-bottom: 20px; }
+      .left h1 { font-size: 1.35rem; margin-bottom: 14px; }
+      .right { padding: 28px 22px; }
     }
-    @media (max-width: 400px) {
+    @media (max-width: 480px) {
       .peserta-cards { grid-template-columns: 1fr; }
+      .field-row { grid-template-columns: 1fr; gap: 0; }
+      .field-row .field { margin-bottom: 16px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- LEFT -->
+  <!-- ══ LEFT ══ -->
   <div class="left">
     <div class="left-logo">
-      <img src="nev-logo.png" alt="NEV" onerror="this.style.display='none'" />
+      <img src="nev-logo.png" alt="Logo NEV" onerror="this.style.display='none'" />
       <div class="left-logo-text">
         <strong>EventNev</strong>
         <span>Network Evolution</span>
@@ -273,45 +280,41 @@
     </div>
   </div>
 
-  <!-- RIGHT -->
+  <!-- ══ RIGHT ══ -->
   <div class="right">
     <a href="index.html" class="back-link">← Kembali ke Beranda</a>
 
     <div class="tab-row">
-      <button class="tab-btn active" id="tab-masuk" onclick="switchTab('masuk')">Masuk</button>
+      <button class="tab-btn active" id="tab-masuk"  onclick="switchTab('masuk')">Masuk</button>
       <button class="tab-btn"        id="tab-daftar" onclick="switchTab('daftar')">Daftar</button>
     </div>
 
-    <!-- PANEL MASUK -->
+    <!-- ── PANEL MASUK ── -->
     <div class="panel active" id="panel-masuk">
       <div class="panel-title">Login</div>
-      <div class="panel-sub">Kami akan mengirimkan kode One-Time Password (OTP) ke email Anda.</div>
+      <div class="panel-sub">Masukkan email dan password akun Anda.</div>
 
       <div class="field">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" placeholder="email@example.com" />
       </div>
 
-      <button class="btn-primary" onclick="handleOTP()">Kirim Kode OTP</button>
+      <div class="field">
+        <label for="login-pass">Password</label>
+        <div class="field-pass">
+          <input type="password" id="login-pass" placeholder="Masukkan password" />
+          <button class="toggle-pass" onclick="togglePass('login-pass', this)" type="button">👁</button>
+        </div>
+      </div>
 
-      <div class="divider">ATAU</div>
-
-      <button class="btn-google" onclick="handleGoogle()">
-        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Lanjutkan dengan Google
-      </button>
+      <button class="btn-primary" onclick="handleLogin()">Masuk</button>
 
       <div class="switch-text">
         Belum punya akun? <a href="#" onclick="switchTab('daftar'); return false;">daftar sekarang</a>
       </div>
     </div>
 
-    <!-- PANEL DAFTAR -->
+    <!-- ── PANEL DAFTAR ── -->
     <div class="panel" id="panel-daftar">
       <div class="panel-title">Daftar Sekarang</div>
       <div class="panel-sub">Buat akun gratis dan ikuti kegiatan Network Evolution.</div>
@@ -335,24 +338,93 @@
       <div>
         <span class="peserta-label">Jenis Peserta</span>
         <div class="peserta-cards">
+
           <label class="peserta-card selected" id="card-mahasiswa" onclick="selectPeserta('mahasiswa')">
             <input type="radio" name="jenis-peserta" value="mahasiswa" checked />
             <div class="peserta-check">✓</div>
             <div class="peserta-card-icon">🎓</div>
             <div class="peserta-card-name">Mahasiswa</div>
-            <div class="peserta-card-desc">Sedang menempuh pendidikan tinggi</div>
+            <div class="peserta-card-desc">Perguruan tinggi</div>
           </label>
+
+          <label class="peserta-card" id="card-siswa" onclick="selectPeserta('siswa')">
+            <input type="radio" name="jenis-peserta" value="siswa" />
+            <div class="peserta-check"></div>
+            <div class="peserta-card-icon">📚</div>
+            <div class="peserta-card-name">Siswa</div>
+            <div class="peserta-card-desc">SMA / SMK / sederajat</div>
+          </label>
+
           <label class="peserta-card" id="card-umum" onclick="selectPeserta('umum')">
             <input type="radio" name="jenis-peserta" value="umum" />
             <div class="peserta-check"></div>
             <div class="peserta-card-icon">👤</div>
             <div class="peserta-card-name">Peserta Umum</div>
-            <div class="peserta-card-desc">Profesional atau masyarakat umum</div>
+            <div class="peserta-card-desc">Profesional / umum</div>
           </label>
+
         </div>
       </div>
 
-      <div class="field">
+      <!-- ── DATA MAHASISWA ── -->
+      <div id="fields-mahasiswa" class="extra-section">
+        <div class="section-divider"><span>Data Kemahasiswaan</span></div>
+
+        <div class="field">
+          <label for="mhs-univ">Asal Universitas</label>
+          <input type="text" id="mhs-univ" placeholder="Nama universitas / perguruan tinggi" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="mhs-nim">NIM</label>
+            <input type="text" id="mhs-nim" placeholder="Nomor Induk Mahasiswa" />
+          </div>
+          <div class="field">
+            <label for="mhs-angkatan">Tahun Angkatan</label>
+            <input type="number" id="mhs-angkatan" placeholder="2022" min="2000" max="2035" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mhs-prodi">Jurusan / Prodi</label>
+          <input type="text" id="mhs-prodi" placeholder="Nama program studi" />
+        </div>
+
+        <div class="field">
+          <label for="mhs-fakultas">Fakultas</label>
+          <input type="text" id="mhs-fakultas" placeholder="Nama fakultas" />
+        </div>
+      </div>
+
+      <!-- ── DATA SISWA ── -->
+      <div id="fields-siswa" class="extra-section hidden">
+        <div class="section-divider"><span>Data Kesiswaan</span></div>
+
+        <div class="field">
+          <label for="siswa-sekolah">Asal Sekolah</label>
+          <input type="text" id="siswa-sekolah" placeholder="Nama SMA / SMK / sederajat" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="siswa-nisn">NISN</label>
+            <input type="text" id="siswa-nisn" placeholder="Nomor Induk Siswa Nasional" />
+          </div>
+          <div class="field">
+            <label for="siswa-angkatan">Tahun Angkatan</label>
+            <input type="number" id="siswa-angkatan" placeholder="2023" min="2000" max="2035" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="siswa-jurusan">Jurusan</label>
+          <input type="text" id="siswa-jurusan" placeholder="Contoh: IPA, IPS, TKJ, RPL, AKL..." />
+        </div>
+      </div>
+
+      <!-- Password (selalu tampil) -->
+      <div class="field" style="margin-top:16px;">
         <label for="reg-pass">Password</label>
         <div class="field-pass">
           <input type="password" id="reg-pass" placeholder="Minimal 8 karakter" />
@@ -370,64 +442,52 @@
 
       <button class="btn-primary" onclick="handleRegister()">Buat Akun</button>
 
-      <div class="divider">ATAU</div>
-
-      <button class="btn-google" onclick="handleGoogle()">
-        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Daftar dengan Google
-      </button>
-
       <div class="switch-text">
         Sudah punya akun? <a href="#" onclick="switchTab('masuk'); return false;">Masuk di sini</a>
       </div>
     </div>
-  </div>
+
+  </div><!-- /right -->
 
   <script>
     function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('tab-' + name).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(p)   { p.classList.remove('active'); });
+      document.getElementById('tab-'   + name).classList.add('active');
       document.getElementById('panel-' + name).classList.add('active');
     }
 
     function selectPeserta(val) {
-      ['mahasiswa','umum'].forEach(function(v) {
-        var card = document.getElementById('card-' + v);
+      ['mahasiswa','siswa','umum'].forEach(function(v) {
+        var card  = document.getElementById('card-' + v);
         var radio = card.querySelector('input[type="radio"]');
         var check = card.querySelector('.peserta-check');
         if (v === val) {
           card.classList.add('selected');
-          radio.checked = true;
+          radio.checked    = true;
           check.textContent = '✓';
+          check.style.color = 'white';
         } else {
           card.classList.remove('selected');
-          radio.checked = false;
+          radio.checked    = false;
           check.textContent = '';
         }
       });
+      document.getElementById('fields-mahasiswa').classList.toggle('hidden', val !== 'mahasiswa');
+      document.getElementById('fields-siswa').classList.toggle('hidden', val !== 'siswa');
     }
 
     function togglePass(id, btn) {
       var inp = document.getElementById(id);
-      if (inp.type === 'password') {
-        inp.type = 'text';
-        btn.textContent = '🙈';
-      } else {
-        inp.type = 'password';
-        btn.textContent = '👁';
-      }
+      if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
+      else                         { inp.type = 'password'; btn.textContent = '👁'; }
     }
 
-    function handleOTP() {
+    function handleLogin() {
       var email = document.getElementById('login-email').value.trim();
-      if (!email) { alert('Masukkan email terlebih dahulu.'); return; }
-      alert('Kode OTP telah dikirim ke ' + email);
+      var pass  = document.getElementById('login-pass').value;
+      if (!email || !pass) { alert('Masukkan email dan password.'); return; }
+      alert('Login berhasil! Selamat datang di EventNev.');
     }
 
     function handleRegister() {
@@ -441,14 +501,28 @@
       if (!nama || !email || !hp || !pass || !pass2) {
         alert('Mohon lengkapi semua data.'); return;
       }
-      if (pass !== pass2) { alert('Password tidak cocok.'); return; }
-      if (pass.length < 8) { alert('Password minimal 8 karakter.'); return; }
+      if (pass !== pass2)   { alert('Password tidak cocok.'); return; }
+      if (pass.length < 8)  { alert('Password minimal 8 karakter.'); return; }
 
-      alert('Akun berhasil dibuat sebagai ' + (jenis === 'mahasiswa' ? 'Mahasiswa' : 'Peserta Umum') + '!\n\nSilakan cek email untuk verifikasi.');
-    }
+      if (jenis === 'mahasiswa') {
+        var u = document.getElementById('mhs-univ').value.trim();
+        var n = document.getElementById('mhs-nim').value.trim();
+        var a = document.getElementById('mhs-angkatan').value.trim();
+        var p = document.getElementById('mhs-prodi').value.trim();
+        var f = document.getElementById('mhs-fakultas').value.trim();
+        if (!u || !n || !a || !p || !f) { alert('Mohon lengkapi data kemahasiswaan.'); return; }
+      }
 
-    function handleGoogle() {
-      alert('Fitur Google Sign-In akan segera tersedia.');
+      if (jenis === 'siswa') {
+        var s  = document.getElementById('siswa-sekolah').value.trim();
+        var ni = document.getElementById('siswa-nisn').value.trim();
+        var as = document.getElementById('siswa-angkatan').value.trim();
+        var j  = document.getElementById('siswa-jurusan').value.trim();
+        if (!s || !ni || !as || !j) { alert('Mohon lengkapi data kesiswaan.'); return; }
+      }
+
+      var label = { mahasiswa: 'Mahasiswa', siswa: 'Siswa', umum: 'Peserta Umum' }[jenis];
+      alert('Akun berhasil dibuat sebagai ' + label + '!\n\nSilakan cek email untuk verifikasi.');
     }
 
     if (new URLSearchParams(location.search).get('tab') === 'daftar') {
