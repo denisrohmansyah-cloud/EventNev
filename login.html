@@ -266,6 +266,9 @@
     @keyframes successProgress{to{width:100%}}
     @media(prefers-reduced-motion:reduce){.success-overlay,.success-card{transition:none}.success-check{animation:none}.success-overlay.show .success-progress span{animation-duration:.01ms}}
 
+  
+    .tab-btn.hidden { display: none !important; }
+    .btn-primary:disabled { opacity: .7; cursor: wait; }
   </style>
 </head>
 <body>
@@ -504,28 +507,67 @@
       else                         { inp.type = 'password'; btn.textContent = '👁'; }
     }
 
-    function handleLogin() {
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+    const adminLoginMode = new URLSearchParams(window.location.search).get('role') === 'admin';
+
+    function configureLoginMode() {
+      if (!adminLoginMode) return;
+      document.title = 'Login Admin — EventNev';
+      document.getElementById('tab-daftar')?.classList.add('hidden');
+      document.getElementById('tab-masuk')?.classList.add('active');
+      document.getElementById('panel-daftar')?.classList.remove('active');
+      document.getElementById('panel-masuk')?.classList.add('active');
+      const title = document.querySelector('#panel-masuk .panel-title');
+      const sub = document.querySelector('#panel-masuk .panel-sub');
+      if (title) title.textContent = 'Login Administrator';
+      if (sub) sub.textContent = 'Masuk menggunakan akun administrator EventNev.';
+    }
+
+    async function handleLogin() {
       var email = document.getElementById('login-email').value.trim();
-      var pass  = document.getElementById('login-pass').value;
+      var pass = document.getElementById('login-pass').value;
       if (!email || !pass) {
         alert('Masukkan email dan password.');
         return;
       }
+      if (SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+        alert('Backend EventNev belum dikonfigurasi. Isi SCRIPT_URL dengan URL deployment Google Apps Script terlebih dahulu.');
+        return;
+      }
 
-      // Simpan sesi yang dibutuhkan dashboard lalu arahkan peserta langsung ke sana.
-      // Catatan: autentikasi pada halaman ini masih berupa demo dan belum memvalidasi kredensial ke backend.
-      var user = {
-        id: email,
-        email: email,
-        nama: email.split('@')[0],
-        jenis: 'Peserta',
-        role: 'peserta'
-      };
+      const button = document.querySelector('#panel-masuk .btn-primary');
+      const oldLabel = button ? button.textContent : 'Masuk';
+      if (button) { button.disabled = true; button.textContent = 'Memeriksa…'; }
       try {
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('action', 'login');
+        url.searchParams.set('email', email);
+        url.searchParams.set('password', pass);
+        const response = await fetch(url.toString());
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+        if (!result.success || !result.user) {
+          alert(result.message || 'Email atau password tidak valid.');
+          return;
+        }
+
+        const user = result.user;
+        if (adminLoginMode && user.role !== 'admin') {
+          alert('Akun ini bukan akun administrator. Gunakan akun admin yang terpisah.');
+          return;
+        }
+        if (!adminLoginMode && user.role === 'admin') {
+          alert('Akun administrator harus masuk melalui Login Admin.');
+          return;
+        }
+
         localStorage.setItem('nevUser', JSON.stringify(user));
-        window.location.href = 'dashboard.html';
+        window.location.href = adminLoginMode ? 'admin.html' : 'dashboard.html';
       } catch (err) {
-        alert('Sesi login tidak dapat disimpan. Aktifkan penyimpanan browser lalu coba lagi.');
+        console.error('Login EventNev gagal:', err);
+        alert('Tidak dapat menghubungi server login. Periksa URL deployment Google Apps Script dan coba lagi.');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = oldLabel; }
       }
     }
 
@@ -580,7 +622,8 @@
       }, 1800);
     }
 
-    if (new URLSearchParams(location.search).get('tab') === 'daftar') {
+    configureLoginMode();
+    if (!adminLoginMode && new URLSearchParams(location.search).get('tab') === 'daftar') {
       switchTab('daftar');
     }
   </script>
