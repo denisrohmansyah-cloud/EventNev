@@ -58,8 +58,8 @@ function setupEventNevDatabase() {
 
   const schemas = {
     Users: ["id", "nama", "email", "noHp", "jenis", "passwordHash", "poin", "createdAt"],
-    Events: ["id", "nama", "kategori", "deskripsi", "tanggal", "waktu", "lokasi", "kuota", "biaya", "syarat", "status", "gambar", "createdAt"],
-    Applications: ["id", "userId", "eventId", "namaEvent", "kategori", "tanggalDaftar", "status", "catatan"],
+    Events: ["id", "nama", "kategori", "deskripsi", "tanggal", "waktu", "lokasi", "kuota", "biaya", "syarat", "persyaratanFoto", "status", "gambar", "createdAt"],
+    Applications: ["id", "userId", "eventId", "namaEvent", "kategori", "tanggalDaftar", "status", "catatan", "requirementFileId", "requirementFileName"],
     Trainers: ["id", "nama", "jabatan", "keahlian", "foto", "bio", "urutan"],
     Certificates: ["id", "userId", "namaEvent", "eventId", "tanggal", "url"],
     Settings: ["key", "value"]
