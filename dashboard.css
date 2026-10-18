@@ -507,3 +507,10 @@
   .db-modal-footer .db-event-action { min-width:0; flex:1; }
   .db-modal-info { grid-template-columns:1fr 1fr; }
 }
+
+
+/* Participant cancellation action */
+.db-cancel-application { display:inline-flex; align-items:center; justify-content:center; margin-top:10px; padding:8px 11px; border:1px solid rgba(225,38,47,.38); border-radius:9px; background:rgba(225,38,47,.09); color:#ff858c; font:600 .76rem/1.35 inherit; cursor:pointer; transition:background .18s,border-color .18s; }
+.db-cancel-application:hover { background:rgba(225,38,47,.18); border-color:rgba(225,38,47,.65); }
+.db-cancel-application:focus-visible { outline:2px solid #ff858c; outline-offset:2px; }
+@media(max-width:560px) { .db-app-card { align-items:flex-start; flex-wrap:wrap; } .db-app-info { min-width:0; flex:1; } .db-app-status { width:100%; padding-left:56px; } }
