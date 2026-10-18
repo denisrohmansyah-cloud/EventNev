@@ -206,7 +206,7 @@ function isDashboardEventOpen(ev) {
 function buildDashboardEventCard(ev) {
   const eventId = String(ev.id || ev.nama || '');
   const userId = state.user?.id || state.user?.email;
-  const registered = state.applications.some(a => String(a.userId) === String(userId) && (String(a.eventId) === eventId || String(a.namaEvent || '') === String(ev.nama || '')));
+  const registered = state.applications.some(a => String(a.userId) === String(userId) && !["cancelled", "dibatalkan"].includes(String(a.status || "").toLowerCase()) && (String(a.eventId) === eventId || String(a.namaEvent || '') === String(ev.nama || '')));
   const open = isDashboardEventOpen(ev);
   const image = ev.gambar ? '<img src="' + sanitize(ev.gambar) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="db-event-placeholder">📅</div>';
   const action = registered ? '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>' : (!open ? '<button class="db-event-action" disabled>Pendaftaran ditutup</button>' : '<button class="db-event-action" onclick="openDashboardEventDetail(\'' + sanitize(eventId) + '\')">Lihat detail & daftar →</button>');
@@ -225,7 +225,7 @@ function openDashboardEventDetail(eventId) {
     modal.addEventListener('click', e => { if (e.target === modal) closeDashboardEventDetail(); }); document.body.appendChild(modal);
   }
   const userId = state.user?.id || state.user?.email;
-  const registered = state.applications.some(a => String(a.userId) === String(userId) && (String(a.eventId) === String(eventId) || String(a.namaEvent || '') === String(ev.nama || '')));
+  const registered = state.applications.some(a => String(a.userId) === String(userId) && !["cancelled", "dibatalkan"].includes(String(a.status || "").toLowerCase()) && (String(a.eventId) === String(eventId) || String(a.namaEvent || '') === String(ev.nama || '')));
   const open = isDashboardEventOpen(ev);
   document.getElementById('dbModalBody').innerHTML = (ev.gambar ? '<img class="db-modal-poster" src="' + sanitize(ev.gambar) + '" alt="Poster kegiatan">' : '<div class="db-modal-poster-placeholder">📅</div>') + '<h3 class="db-modal-event-name">' + sanitize(ev.nama) + '</h3><div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
     '<div class="db-modal-info">' + (ev.tanggal ? '<div><span>Tanggal</span><strong>' + formatDate(ev.tanggal) + '</strong></div>' : '') + (ev.waktu ? '<div><span>Waktu</span><strong>' + sanitize(ev.waktu) + '</strong></div>' : '') + (ev.lokasi ? '<div><span>Lokasi</span><strong>' + sanitize(ev.lokasi) + '</strong></div>' : '') + (ev.biaya || ev.harga ? '<div><span>Biaya</span><strong>' + sanitize(ev.biaya || ev.harga) + '</strong></div>' : '') + '</div><h4>Deskripsi</h4><p class="db-modal-description">' + sanitize(ev.deskripsi || 'Informasi kegiatan belum ditambahkan.') + '</p>' + (ev.persyaratanFoto ? '<div class="db-modal-requirement"><strong>Persyaratan</strong><p>' + sanitize(ev.persyaratanFoto) + '</p><small>Unggah persyaratan melalui halaman Event sebelum mendaftar.</small></div>' : '');
@@ -249,6 +249,7 @@ async function registerToEvent(eventId) {
   const userId = state.user?.id || state.user?.email;
   if (!userId) { toast("Sesi peserta tidak ditemukan. Silakan login kembali.", "error"); return; }
   if (state.applications.some(a => String(a.userId) === String(userId) &&
+      !["cancelled", "dibatalkan"].includes(String(a.status || "").toLowerCase()) &&
       (String(a.eventId) === String(eventId) || String(a.namaEvent || "") === String(ev.nama || "")))) {
     toast("Kamu sudah terdaftar pada kegiatan ini.", "info"); renderView(); return;
   }
