@@ -1,3 +1,31 @@
+function normalizePublicImageUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    if (u.hostname === "drive.google.com" || u.hostname === "docs.google.com") {
+      let id = u.searchParams.get("id");
+      if (!id) { const m = u.pathname.match(/\/file\/d\/([^/]+)/); if (m) id = m[1]; }
+      if (id) return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w1600";
+    }
+  } catch (_) {}
+  return raw;
+}
+
+function bindImageFallbacks(root = document) {
+  root.querySelectorAll("img").forEach(img => {
+    if (img.dataset.fallbackBound) return;
+    img.dataset.fallbackBound = "1";
+    img.addEventListener("error", () => {
+      if (img.dataset.fallbackTried) { img.style.display = "none"; return; }
+      img.dataset.fallbackTried = "1";
+      const src = img.getAttribute("src") || "";
+      const m = src.match(/[?&]id=([^&]+)/) || src.match(/\/d\/([^/?]+)/);
+      if (m) img.src = "https://drive.google.com/uc?export=view&id=" + decodeURIComponent(m[1]);
+      else img.style.display = "none";
+    }, { once: true });
+  });
+}
 /**
  * EventNev — app.js
  * Main application script for Network Evolution portal
@@ -170,7 +198,7 @@ function statusBadge(status) {
 
 function buildEventCard(ev) {
   const imgHtml = ev.gambar
-    ? `<img src="${sanitize(ev.gambar)}" alt="${sanitize(ev.nama)}" loading="lazy">`
+    ? `<img src="${sanitize(normalizePublicImageUrl(ev.gambar))}" alt="${sanitize(ev.nama)}" loading="lazy">`
     : `<span>📋</span>`;
 
   return `
@@ -358,7 +386,7 @@ function initImpactStatsAnimation() {
    ========================================================= */
 function buildTrainerCard(t) {
   const avatar = t.foto
-    ? `<img src="${sanitize(t.foto)}" alt="${sanitize(t.nama)}" loading="lazy">`
+    ? `<img src="${sanitize(normalizePublicImageUrl(t.foto))}" alt="${sanitize(t.nama)}" loading="lazy">`
     : `<span>${(t.nama || "?")[0].toUpperCase()}</span>`;
   return `
     <div class="trainer-card">
