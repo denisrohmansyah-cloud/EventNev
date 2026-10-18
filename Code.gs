@@ -205,6 +205,7 @@ function doGet(e) {
       case "getAlumniCount":  result = handleAlumniCount(params); break;
       case "daftar":          result = handleDaftar(params); break;
       case "getMyApplications": result = handleGetMyApplications(params); break;
+      case "cancelApplication": result = handleCancelApplication(params); break;
       case "getMyCertificates": result = handleGetMyCertificates(params); break;
       case "absen":           result = handleAbsen(params); break;
       // Admin
@@ -457,6 +458,31 @@ function handleDaftar(p) {
   ]);
 
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
+}
+
+function handleCancelApplication(p) {
+  const userId = String(p.userId || "").trim();
+  const applicationId = String(p.applicationId || "").trim();
+  if (!userId || !applicationId) return { success: false, message: "Data pembatalan tidak lengkap." };
+  const sheet = getSheet(SHEET.APPLICATIONS);
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return { success: false, message: "Pendaftaran tidak ditemukan." };
+  const headers = values[0].map(h => String(h).trim());
+  const idCol = headers.indexOf("id");
+  const userCol = headers.indexOf("userId");
+  const statusCol = headers.indexOf("status");
+  if (idCol < 0 || userCol < 0 || statusCol < 0) throw new Error("Kolom Applications tidak lengkap.");
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][idCol]) !== applicationId) continue;
+    if (String(values[i][userCol]) !== userId) return { success: false, message: "Kamu tidak berhak membatalkan pendaftaran ini." };
+    const status = String(values[i][statusCol] || "pending").trim().toLowerCase();
+    if (status === "cancelled" || status === "dibatalkan") return { success: false, message: "Pendaftaran ini sudah dibatalkan." };
+    if (status !== "pending" && status !== "menunggu") return { success: false, message: "Pendaftaran hanya dapat dibatalkan saat masih menunggu konfirmasi." };
+    sheet.getRange(i + 1, statusCol + 1).setValue("cancelled");
+    SpreadsheetApp.flush();
+    return { success: true, message: "Pendaftaran berhasil dibatalkan." };
+  }
+  return { success: false, message: "Pendaftaran tidak ditemukan." };
 }
 
 function handleGetMyApplications(p) {
