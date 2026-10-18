@@ -50,7 +50,7 @@ function checkAdmin() {
     const user = JSON.parse(localStorage.getItem("nevUser") || "{}");
     if (user.role !== "admin") {
       toast("Akses hanya untuk admin.", "error");
-      setTimeout(() => window.location.href = "login.html", 1500);
+      setTimeout(() => window.location.href = "login.html?role=admin", 1500);
       return false;
     }
     document.getElementById("sidebarName").textContent = user.nama || "Admin";
