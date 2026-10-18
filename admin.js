@@ -13,6 +13,7 @@ const adminState = {
   applications: [],
   users: [],
   trainers: [],
+  certificates: [],
 };
 
 /* === UTILS === */
@@ -112,6 +113,7 @@ function renderView() {
     case "applications": renderApplications(); break;
     case "users":        renderUsers(); break;
     case "trainers":     renderTrainers(); break;
+    case "certificates": renderCertificates(); break;
   }
 }
 
@@ -400,6 +402,125 @@ async function renderUsers() {
     `);
   } catch {
     setContent('<div class="db-loading">Gagal memuat data peserta.</div>');
+  }
+}
+
+
+/* --- CERTIFICATES --- */
+async function renderCertificates() {
+  setContent('<div class="db-loading">Memuat menu sertifikat…</div>');
+  try {
+    const results = await Promise.all([
+      apiFetch({ action: "getUsers" }),
+      apiFetch({ action: "getEvents" }),
+      apiFetch({ action: "getCertificates" })
+    ]);
+    adminState.users = Array.isArray(results[0]) ? results[0] : [];
+    adminState.events = Array.isArray(results[1]) ? results[1] : [];
+    if (results[2] && results[2].success === false) throw new Error(results[2].message || "Gagal memuat sertifikat.");
+    adminState.certificates = Array.isArray(results[2]) ? results[2] : [];
+    const participants = adminState.users.filter(u => String(u.jenis || "").toLowerCase() !== "admin");
+    setContent(`
+      <section class="admin-cert-shell">
+        <div class="admin-cert-heading">
+          <div><h2>Kelola Sertifikat Peserta</h2><p>Unggah sertifikat dan berikan langsung ke akun peserta agar dapat dilihat pada menu Sertifikat Saya.</p></div>
+          <span class="admin-cert-count">🏆 ${adminState.certificates.length} sertifikat</span>
+        </div>
+        <form id="adminCertificateForm" class="admin-cert-form">
+          <div class="admin-cert-form-title"><span>📤</span><div><h3>Unggah Sertifikat</h3><p>Isi data penerima dan pilih file sertifikat.</p></div></div>
+          <div class="admin-editor-grid">
+            <label class="admin-editor-label">Peserta penerima *
+              <select id="certUserId" required><option value="">Pilih peserta…</option>${participants.map(u => `<option value="${sanitize(u.id)}">${sanitize(u.nama)} — ${sanitize(u.email)}</option>`).join("")}</select>
+            </label>
+            <label class="admin-editor-label">Kegiatan terkait
+              <select id="certEventId"><option value="">Pilih kegiatan (opsional)…</option>${adminState.events.map(ev => `<option value="${sanitize(ev.id)}" data-name="${sanitize(ev.nama)}">${sanitize(ev.nama)}</option>`).join("")}</select>
+            </label>
+            <label class="admin-editor-label">Nama sertifikat / kegiatan *
+              <input id="certName" required maxlength="160" placeholder="Contoh: Sertifikat Open Lab Network Evolution">
+            </label>
+            <label class="admin-editor-label">Tanggal sertifikat
+              <input id="certDate" type="date" value="${new Date().toISOString().slice(0,10)}">
+            </label>
+          </div>
+          <label class="admin-editor-label admin-cert-file-label">File sertifikat *
+            <input id="certFile" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,image/jpeg,image/png,image/webp,image/gif,application/pdf" required>
+            <small>Format JPG, JPEG, PNG, WEBP, GIF, atau PDF. Maksimal 6 MB. File disimpan di Google Drive dan tautan diberikan kepada peserta.</small>
+          </label>
+          <div id="certFilePreview" class="admin-cert-file-preview" aria-live="polite">Belum ada file dipilih.</div>
+          <div class="admin-cert-actions"><button class="btn btn-primary" type="submit" id="certSubmitBtn">Unggah & Berikan Sertifikat</button></div>
+          <div id="certUploadMessage" class="admin-cert-message" role="status" aria-live="polite"></div>
+        </form>
+        <section class="admin-cert-list-section">
+          <div class="db-section-title"><span>Sertifikat yang Sudah Diberikan</span><button type="button" class="btn btn-outline admin-btn-sm" id="certRefreshBtn">↻ Perbarui</button></div>
+          <div class="table-wrap" id="adminCertificatesTable">${renderCertificatesTable()}</div>
+        </section>
+      </section>
+    `);
+    document.getElementById("certEventId")?.addEventListener("change", e => {
+      const opt = e.target.selectedOptions[0];
+      if (opt && opt.dataset.name && !document.getElementById("certName").value.trim()) document.getElementById("certName").value = "Sertifikat " + opt.dataset.name;
+    });
+    document.getElementById("certFile")?.addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0];
+      const preview = document.getElementById("certFilePreview");
+      if (!file) { preview.textContent = "Belum ada file dipilih."; return; }
+      preview.innerHTML = '<span class="admin-cert-file-icon">' + (/^image\//.test(file.type) ? '🖼️' : '📄') + '</span><span><b>' + sanitize(file.name) + '</b><small>' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small></span>';
+    });
+    document.getElementById("certRefreshBtn")?.addEventListener("click", renderCertificates);
+    document.getElementById("adminCertificateForm")?.addEventListener("submit", uploadCertificateForParticipant);
+  } catch (err) {
+    setContent('<div class="admin-cert-error"><h3>Menu sertifikat belum dapat dimuat</h3><p>' + sanitize(err.message || "Periksa deployment Google Apps Script.") + '</p><button class="btn btn-outline" onclick="renderCertificates()">Coba lagi</button></div>');
+  }
+}
+
+function renderCertificatesTable() {
+  if (!adminState.certificates.length) return '<div class="admin-overview-empty">Belum ada sertifikat yang diberikan.</div>';
+  const usersById = Object.fromEntries(adminState.users.map(u => [String(u.id), u]));
+  return '<table class="admin-table"><thead><tr><th>Peserta</th><th>Sertifikat</th><th>Tanggal</th><th>File</th></tr></thead><tbody>' +
+    adminState.certificates.slice().sort((a,b) => String(b.tanggal || "").localeCompare(String(a.tanggal || ""))).map(c => {
+      const user = usersById[String(c.userId)] || {};
+      return '<tr><td><b>' + sanitize(user.nama || c.userId || "—") + '</b><br><small>' + sanitize(user.email || "") + '</small></td><td>' + sanitize(c.namaEvent || c.nama || "Sertifikat") + '</td><td>' + formatDate(c.tanggal) + '</td><td>' + (c.url ? '<a class="btn btn-outline admin-btn-sm" href="' + sanitize(c.url) + '" target="_blank" rel="noopener">Lihat / Unduh ↗</a>' : '—') + '</td></tr>';
+    }).join("") + '</tbody></table>';
+}
+
+async function uploadCertificateForParticipant(event) {
+  event.preventDefault();
+  const form = document.getElementById("adminCertificateForm");
+  const button = document.getElementById("certSubmitBtn");
+  const message = document.getElementById("certUploadMessage");
+  const file = document.getElementById("certFile")?.files?.[0];
+  const userId = document.getElementById("certUserId")?.value || "";
+  const eventSelect = document.getElementById("certEventId");
+  const eventId = eventSelect?.value || "";
+  const namaEvent = document.getElementById("certName")?.value.trim() || "";
+  const tanggal = document.getElementById("certDate")?.value || new Date().toISOString().slice(0,10);
+  if (!userId || !namaEvent || !file) { message.textContent = "Lengkapi peserta, nama sertifikat, dan file."; message.className = "admin-cert-message error"; return; }
+  const allowed = ["image/jpeg","image/png","image/webp","image/gif","application/pdf"];
+  if (!allowed.includes(file.type)) { message.textContent = "Format file tidak didukung. Pilih JPG, PNG, WEBP, GIF, atau PDF."; message.className = "admin-cert-message error"; return; }
+  if (file.size > 6 * 1024 * 1024) { message.textContent = "Ukuran file maksimal 6 MB."; message.className = "admin-cert-message error"; return; }
+  button.disabled = true; button.textContent = "Mengunggah…";
+  message.textContent = "Mengunggah file dan menyimpan sertifikat…"; message.className = "admin-cert-message";
+  try {
+    const dataUrl = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("File tidak dapat dibaca.")); reader.readAsDataURL(file); });
+    const admin = JSON.parse(localStorage.getItem("nevUser") || "{}");
+    const response = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"uploadCertificate",adminEmail:admin.email || "",userId,eventId,namaEvent,tanggal,fileName:file.name,mimeType:file.type,base64:String(dataUrl).split(",")[1]}) });
+    const result = await response.json();
+    if (!result || !result.success) throw new Error(result?.message || "Sertifikat gagal diunggah.");
+    message.textContent = "✓ " + (result.message || "Sertifikat berhasil diberikan.");
+    message.className = "admin-cert-message success";
+    toast("Sertifikat berhasil diberikan kepada peserta.", "success");
+    form.reset();
+    document.getElementById("certDate").value = new Date().toISOString().slice(0,10);
+    document.getElementById("certFilePreview").textContent = "Belum ada file dipilih.";
+    const updated = await apiFetch({action:"getCertificates"});
+    if (Array.isArray(updated)) adminState.certificates = updated;
+    document.getElementById("adminCertificatesTable").innerHTML = renderCertificatesTable();
+  } catch (err) {
+    message.textContent = err.message || "Upload gagal. Coba lagi.";
+    message.className = "admin-cert-message error";
+    toast(message.textContent, "error");
+  } finally {
+    button.disabled = false; button.textContent = "Unggah & Berikan Sertifikat";
   }
 }
 
