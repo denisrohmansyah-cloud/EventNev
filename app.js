@@ -61,6 +61,16 @@ function toast(msg, type = "info") {
   el._timer = setTimeout(() => el.classList.remove("show"), 3500);
 }
 
+function formatEventTime(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const raw = String(value).trim();
+  if (/^1899-12-30T/i.test(raw)) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", hour12: false }).format(d) + " WIB";
+  }
+  return raw;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   try {
@@ -216,7 +226,7 @@ function buildEventCard(ev) {
         <div class="event-meta">
           ${ev.tanggal ? `<div class="event-meta-row"><span class="icon">📅</span>${formatDate(ev.tanggal)}</div>` : ""}
           ${ev.lokasi ? `<div class="event-meta-row"><span class="icon">📍</span>${sanitize(ev.lokasi)}</div>` : ""}
-          ${ev.waktu ? `<div class="event-meta-row"><span class="icon">🕐</span>${sanitize(ev.waktu)}</div>` : ""}
+          ${ev.waktu ? `<div class="event-meta-row"><span class="icon">🕐</span>${sanitize(formatEventTime(ev.waktu))}</div>` : ""}
         </div>
       </div>
       <div class="event-card-footer">
