@@ -516,8 +516,9 @@ p  { font-size: 1rem; line-height: 1.7; }
 .trainer-name { font-weight: 700; font-size: 1.08rem; }
 .trainer-bio { max-width: 34rem; color: var(--text-dim); font-size: .88rem; line-height: 1.65; margin: 2px 0; }
 .trainer-socials { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
-.trainer-socials a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 7px 13px; border: 1px solid rgba(225,38,47,.35); border-radius: 999px; color: var(--text); text-decoration: none; font-size: .8rem; font-weight: 650; transition: background .2s ease, border-color .2s ease; }
-.trainer-social-icon { width: 17px; height: 17px; flex: 0 0 17px; display: block; }
+.trainer-socials a { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; padding: 0; border: 1px solid rgba(225,38,47,.35); border-radius: 50%; color: var(--text); text-decoration: none; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+.trainer-socials a:hover { transform: translateY(-2px); }
+.trainer-social-icon { width: 24px; height: 24px; flex: 0 0 24px; display: block; }
 .trainer-socials a:hover { background: rgba(225,38,47,.12); border-color: var(--red); }
 @media (max-width: 600px) { .trainer-avatar { width: 124px; height: 124px; } .trainer-card { padding: 20px 16px; } }
 .trainer-role { font-size: .78rem; color: var(--text-dim); }
