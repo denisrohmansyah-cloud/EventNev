@@ -10,7 +10,141 @@
  * 5. Salin Deployment URL ke SCRIPT_URL di semua file .js
  */
 
+// ID database disimpan otomatis di Script Properties oleh setupEventNevDatabase().
 const SPREADSHEET_ID = "GANTI_DENGAN_ID_SPREADSHEET_KAMU";
+
+function getDatabaseSpreadsheet_() {
+  const properties = PropertiesService.getScriptProperties();
+  const savedId = properties.getProperty("EVENTNEV_SPREADSHEET_ID");
+  const id = savedId || SPREADSHEET_ID;
+  if (!id || id === "GANTI_DENGAN_ID_SPREADSHEET_KAMU") {
+    throw new Error("Database belum dibuat. Jalankan setupEventNevDatabase() dari editor Apps Script.");
+  }
+  return SpreadsheetApp.openById(id);
+}
+
+/**
+ * Jalankan SATU KALI setelah menempelkan Code.gs.
+ * Membuat spreadsheet dan semua sheet inti EventNev.
+ * URL spreadsheet akan muncul di Execution log.
+ */
+function setupEventNevDatabase() {
+  const properties = PropertiesService.getScriptProperties();
+  let ss;
+  const existingId = properties.getProperty("EVENTNEV_SPREADSHEET_ID");
+
+  if (existingId) {
+    ss = SpreadsheetApp.openById(existingId);
+  } else if (SPREADSHEET_ID && SPREADSHEET_ID !== "GANTI_DENGAN_ID_SPREADSHEET_KAMU") {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    properties.setProperty("EVENTNEV_SPREADSHEET_ID", ss.getId());
+  } else {
+    ss = SpreadsheetApp.create("EventNev Database");
+    properties.setProperty("EVENTNEV_SPREADSHEET_ID", ss.getId());
+  }
+
+  const schemas = {
+    Users: ["id", "nama", "email", "noHp", "jenis", "passwordHash", "poin", "createdAt"],
+    Events: ["id", "nama", "kategori", "deskripsi", "tanggal", "waktu", "lokasi", "kuota", "biaya", "syarat", "status", "gambar", "createdAt"],
+    Applications: ["id", "userId", "eventId", "namaEvent", "kategori", "tanggalDaftar", "status", "catatan"],
+    Trainers: ["id", "nama", "jabatan", "keahlian", "foto", "bio", "urutan"],
+    Certificates: ["id", "userId", "namaEvent", "eventId", "tanggal", "url"],
+    Settings: ["key", "value"]
+  };
+
+  Object.keys(schemas).forEach(function(name) {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) sheet = ss.insertSheet(name);
+    if (sheet.getLastRow() === 0) {
+      const headers = schemas[name];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+      sheet.setFrozenRows(1);
+    }
+  });
+
+  // Hapus sheet bawaan kosong hanya jika aman dan sheet inti sudah dibuat.
+  ss.getSheets().forEach(function(sheet) {
+    if (sheet.getName() === "Sheet1" && sheet.getLastRow() === 0 && ss.getSheets().length > 1) {
+      ss.deleteSheet(sheet);
+    }
+  });
+
+  Logger.log("EventNev database siap: " + ss.getUrl());
+  Logger.log("Spreadsheet ID: " + ss.getId());
+  return ss.getUrl();
+}
+
+/**
+ * Jalankan setelah setupEventNevDatabase().
+ * Ganti PASSWORD_ADMIN dengan password pilihanmu sebelum menjalankan.
+ * Fungsi membuat atau memperbarui akun admin awal.
+ */
+function buatAdminAwal() {
+  const EMAIL_ADMIN = "nevpurwokerto@gmail.com";
+  const PASSWORD_ADMIN = "GANTI_PASSWORD_ADMIN_MINIMAL_8_KARAKTER";
+  const NAMA_ADMIN = "Administrator EventNev";
+
+  if (PASSWORD_ADMIN === "GANTI_PASSWORD_ADMIN_MINIMAL_8_KARAKTER" || PASSWORD_ADMIN.length < 8) {
+    throw new Error("Ganti PASSWORD_ADMIN dengan password minimal 8 karakter sebelum menjalankan fungsi.");
+  }
+
+  const sheet = getDatabaseSpreadsheet_().getSheetByName("Users");
+  if (!sheet) throw new Error('Sheet "Users" tidak ditemukan. Jalankan setupEventNevDatabase() dahulu.');
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(function(h) { return String(h).trim(); });
+  const col = {
+    id: headers.indexOf("id"),
+    nama: headers.indexOf("nama"),
+    email: headers.indexOf("email"),
+    noHp: headers.indexOf("noHp"),
+    jenis: headers.indexOf("jenis"),
+    passwordHash: headers.indexOf("passwordHash"),
+    poin: headers.indexOf("poin"),
+    createdAt: headers.indexOf("createdAt")
+  };
+  if (col.email < 0 || col.jenis < 0 || col.passwordHash < 0) {
+    throw new Error("Header Users tidak sesuai. Jalankan setupEventNevDatabase() dan periksa header.");
+  }
+
+  let rowNumber = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][col.email]).trim().toLowerCase() === EMAIL_ADMIN.toLowerCase()) {
+      rowNumber = i + 1;
+      break;
+    }
+  }
+
+  let hash = 0;
+  for (let i = 0; i < PASSWORD_ADMIN.length; i++) {
+    const chr = PASSWORD_ADMIN.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  const passwordHash = "nev_" + Math.abs(hash).toString(36);
+
+  if (rowNumber === -1) {
+    const newRow = new Array(headers.length).fill("");
+    if (col.id >= 0) newRow[col.id] = "USR_ADMIN_" + Date.now();
+    if (col.nama >= 0) newRow[col.nama] = NAMA_ADMIN;
+    newRow[col.email] = EMAIL_ADMIN;
+    if (col.noHp >= 0) newRow[col.noHp] = "";
+    newRow[col.jenis] = "Admin";
+    newRow[col.passwordHash] = passwordHash;
+    if (col.poin >= 0) newRow[col.poin] = 0;
+    if (col.createdAt >= 0) newRow[col.createdAt] = new Date().toISOString();
+    sheet.appendRow(newRow);
+  } else {
+    if (col.nama >= 0) sheet.getRange(rowNumber, col.nama + 1).setValue(NAMA_ADMIN);
+    sheet.getRange(rowNumber, col.jenis + 1).setValue("Admin");
+    sheet.getRange(rowNumber, col.passwordHash + 1).setValue(passwordHash);
+  }
+
+  SpreadsheetApp.flush();
+  Logger.log("Akun admin siap: " + EMAIL_ADMIN);
+  return "Akun admin berhasil disiapkan. Login menggunakan password yang diisi di fungsi buatAdminAwal().";
+}
 
 // Sheet names
 const SHEET = {
@@ -60,7 +194,7 @@ function jsonResponse(data) {
 }
 
 function getSheet(name) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss = getDatabaseSpreadsheet_();
   let sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
