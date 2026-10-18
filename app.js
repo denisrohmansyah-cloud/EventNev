@@ -394,6 +394,8 @@ function buildTrainerCard(t) {
       <div class="trainer-name">${sanitize(t.nama)}</div>
       <div class="trainer-role">${sanitize(t.jabatan || t.role || "Trainer")}</div>
       ${t.keahlian ? `<span class="trainer-badge">${sanitize(t.keahlian)}</span>` : ""}
+      ${t.bio ? `<p class="trainer-bio">${sanitize(t.bio)}</p>` : ""}
+      ${(t.instagram || t.linkedin) ? `<div class="trainer-socials">${t.instagram ? `<a href="${sanitize(t.instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram ${sanitize(t.nama)}">Instagram</a>` : ""}${t.linkedin ? `<a href="${sanitize(t.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn ${sanitize(t.nama)}">LinkedIn</a>` : ""}</div>` : ""}
     </div>`;
 }
 
