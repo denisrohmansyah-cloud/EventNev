@@ -66,16 +66,39 @@
       color: var(--text);
     }
     .admin-editor-label input,
-    .admin-editor-label textarea {
+    .admin-editor-label textarea,
+    .admin-editor-label select {
       display: block;
+      box-sizing: border-box;
       width: 100%;
-      margin-top: 6px;
-      padding: 10px;
+      min-width: 0;
+      min-height: 44px;
+      margin-top: 7px;
+      padding: 10px 12px;
       font: inherit;
       color: var(--text);
       background: var(--dark-3);
       border: 1px solid var(--dark-4);
       border-radius: 8px;
+    }
+    .admin-editor-label input[type="file"] {
+      padding: 9px;
+      font-size: .82rem;
+    }
+    .admin-editor-label small {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: .75rem;
+      line-height: 1.45;
+    }
+    .admin-editor-grid > .admin-editor-label { min-width: 0; margin-top: 0; }
+    .admin-editor-grid { align-items: start; gap: 16px; }
+    .admin-editor-label input:focus,
+    .admin-editor-label textarea:focus,
+    .admin-editor-label select:focus {
+      outline: 2px solid var(--red);
+      outline-offset: 1px;
     }
     .admin-editor-label input:focus,
     .admin-editor-label textarea:focus {
