@@ -204,6 +204,36 @@ function doGet(e) {
   }
 }
 
+function doPost(e) {
+  try {
+    const p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (p.action !== 'uploadRequirementPhoto') return jsonResponse({success:false,message:'Aksi tidak dikenal.'});
+    const userId = String(p.userId || '').trim();
+    const email = String(p.email || '').trim().toLowerCase();
+    if (!userId || !email) return jsonResponse({success:false,message:'Silakan login kembali.'});
+    const users = sheetToObjects(getSheet(SHEET.USERS));
+    const user = users.find(u => (String(u.id || '') === userId || String(u.email || '').toLowerCase() === userId.toLowerCase()) && String(u.email || '').toLowerCase() === email);
+    if (!user) return jsonResponse({success:false,message:'Akun peserta tidak valid.'});
+    const eventId = String(p.eventId || '');
+    const ev = sheetToObjects(getSheet(SHEET.EVENTS)).find(x => String(x.id) === eventId || String(x.nama) === eventId);
+    if (!ev || !String(ev.persyaratanFoto || '').trim()) return jsonResponse({success:false,message:'Kegiatan ini tidak meminta foto persyaratan.'});
+    const mime = String(p.mimeType || '');
+    if (['image/jpeg','image/png','image/webp'].indexOf(mime) < 0) return jsonResponse({success:false,message:'Format harus JPG, PNG, atau WEBP.'});
+    const b64 = String(p.base64 || '');
+    if (!b64 || b64.length > 1400000) return jsonResponse({success:false,message:'Foto harus di bawah 1 MB setelah kompresi.'});
+    const bytes = Utilities.base64Decode(b64);
+    if (bytes.length >= 1048576) return jsonResponse({success:false,message:'Foto harus di bawah 1 MB.'});
+    const props = PropertiesService.getScriptProperties();
+    let folder = null;
+    const savedId = props.getProperty('EVENTNEV_REQUIREMENT_FOLDER_ID');
+    if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
+    if (!folder) { folder = DriveApp.createFolder('EventNev - Foto Persyaratan Peserta'); props.setProperty('EVENTNEV_REQUIREMENT_FOLDER_ID', folder.getId()); }
+    const name = String(p.fileName || 'foto-persyaratan.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0,100);
+    const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+    return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:'Foto berhasil diunggah.'});
+  } catch (err) { return jsonResponse({success:false,message:'Upload gagal: ' + err.message}); }
+}
+
 function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
@@ -348,7 +378,7 @@ function handleAlumniCount() {
    APPLICATIONS
    ========================================================= */
 function handleDaftar(p) {
-  const { userId, eventId, nama, email } = p;
+  const { userId, eventId, nama, email, requirementFileId, requirementFileName } = p;
   if (!userId || !eventId) return { success: false, message: "Data tidak lengkap." };
 
   const sheet = getSheet(SHEET.APPLICATIONS);
@@ -361,6 +391,9 @@ function handleDaftar(p) {
   const evSheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(evSheet);
   const ev = events.find(e => String(e.id) === String(eventId) || e.nama === eventId);
+  if (ev && String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
+    return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
+  }
 
   const id = "APP_" + Date.now();
   sheet.appendRow([
@@ -372,6 +405,8 @@ function handleDaftar(p) {
     new Date().toISOString(),
     "pending",
     "",
+    requirementFileId || "",
+    requirementFileName || "",
   ]);
 
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
