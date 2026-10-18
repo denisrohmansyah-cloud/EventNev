@@ -204,31 +204,35 @@ function isDashboardEventOpen(ev) {
   return !status || /buka|open|available|aktif/i.test(status);
 }
 function buildDashboardEventCard(ev) {
-  const eventId = String(ev.id || ev.nama || "");
+  const eventId = String(ev.id || ev.nama || '');
   const userId = state.user?.id || state.user?.email;
-  const alreadyRegistered = state.applications.some(a =>
-    String(a.userId) === String(userId) &&
-    (String(a.eventId) === eventId || String(a.namaEvent || "") === String(ev.nama || ""))
-  );
+  const registered = state.applications.some(a => String(a.userId) === String(userId) && (String(a.eventId) === eventId || String(a.namaEvent || '') === String(ev.nama || '')));
   const open = isDashboardEventOpen(ev);
-  const requiresPhoto = Boolean(String(ev.persyaratanFoto || "").trim());
-  const image = ev.gambar
-    ? '<img src="' + sanitize(ev.gambar) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-    : '<div class="db-event-placeholder">📅</div>';
-  let action;
-  if (alreadyRegistered) action = '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>';
-  else if (!open) action = '<button class="db-event-action" disabled>Pendaftaran ditutup</button>';
-  else if (requiresPhoto) action = '<button class="db-event-action" onclick="openDashboardEventRequirements(\'' + sanitize(eventId) + '\')">Lihat persyaratan</button>';
-  else action = '<button class="db-event-action" onclick="registerToEvent(\'' + sanitize(eventId) + '\')">Daftar sekarang →</button>';
-  return '<article class="db-event-card"><div class="db-event-image">' + image + '</div><div class="db-event-content">' +
-    '<div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || "Kegiatan") + '</span>' +
-    '<span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
-    '<h3>' + sanitize(ev.nama || "Kegiatan") + '</h3><p class="db-event-description">' + sanitize(ev.deskripsi || "Informasi kegiatan belum ditambahkan.") + '</p>' +
-    '<div class="db-event-meta">' + (ev.tanggal ? '<span>📅 ' + formatDate(ev.tanggal) + '</span>' : '') +
-    (ev.waktu ? '<span>🕒 ' + sanitize(ev.waktu) + '</span>' : '') + (ev.lokasi ? '<span>📍 ' + sanitize(ev.lokasi) + '</span>' : '') +
-    (ev.kuota ? '<span>👥 Kuota ' + sanitize(ev.kuota) + '</span>' : '') + '</div>' +
-    (requiresPhoto && !alreadyRegistered ? '<p class="db-event-requirement">📎 Memerlukan foto persyaratan.</p>' : '') + action + '</div></article>';
+  const image = ev.gambar ? '<img src="' + sanitize(ev.gambar) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="db-event-placeholder">📅</div>';
+  const action = registered ? '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>' : (!open ? '<button class="db-event-action" disabled>Pendaftaran ditutup</button>' : '<button class="db-event-action" onclick="openDashboardEventDetail(\'' + sanitize(eventId) + '\')">Lihat detail & daftar →</button>');
+  return '<article class="db-event-card"><button type="button" class="db-event-image db-event-image-button" onclick="openDashboardEventDetail(\'' + sanitize(eventId) + '\')" aria-label="Lihat detail kegiatan">' + image + '</button><div class="db-event-content">' +
+    '<div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
+    '<h3>' + sanitize(ev.nama || 'Kegiatan') + '</h3><p class="db-event-description">' + sanitize(ev.deskripsi || 'Informasi kegiatan belum ditambahkan.') + '</p>' +
+    '<div class="db-event-meta">' + (ev.tanggal ? '<span>📅 ' + formatDate(ev.tanggal) + '</span>' : '') + (ev.waktu ? '<span>🕒 ' + sanitize(ev.waktu) + '</span>' : '') + (ev.lokasi ? '<span>📍 ' + sanitize(ev.lokasi) + '</span>' : '') + '</div>' + action + '</div></article>';
 }
+function openDashboardEventDetail(eventId) {
+  const ev = state.events.find(item => String(item.id || item.nama) === String(eventId));
+  if (!ev) { toast('Detail kegiatan tidak ditemukan.', 'error'); return; }
+  let modal = document.getElementById('dashboardEventModal');
+  if (!modal) {
+    modal = document.createElement('div'); modal.id = 'dashboardEventModal'; modal.className = 'db-modal-backdrop'; modal.hidden = true;
+    modal.innerHTML = '<section class="db-modal" role="dialog" aria-modal="true" aria-labelledby="dbModalTitle"><header class="db-modal-header"><h2 id="dbModalTitle">Detail Kegiatan</h2><button type="button" class="db-modal-close" aria-label="Tutup" onclick="closeDashboardEventDetail()">×</button></header><div class="db-modal-body" id="dbModalBody"></div><footer class="db-modal-footer" id="dbModalFooter"></footer></section>';
+    modal.addEventListener('click', e => { if (e.target === modal) closeDashboardEventDetail(); }); document.body.appendChild(modal);
+  }
+  const userId = state.user?.id || state.user?.email;
+  const registered = state.applications.some(a => String(a.userId) === String(userId) && (String(a.eventId) === String(eventId) || String(a.namaEvent || '') === String(ev.nama || '')));
+  const open = isDashboardEventOpen(ev);
+  document.getElementById('dbModalBody').innerHTML = (ev.gambar ? '<img class="db-modal-poster" src="' + sanitize(ev.gambar) + '" alt="Poster kegiatan">' : '<div class="db-modal-poster-placeholder">📅</div>') + '<h3 class="db-modal-event-name">' + sanitize(ev.nama) + '</h3><div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
+    '<div class="db-modal-info">' + (ev.tanggal ? '<div><span>Tanggal</span><strong>' + formatDate(ev.tanggal) + '</strong></div>' : '') + (ev.waktu ? '<div><span>Waktu</span><strong>' + sanitize(ev.waktu) + '</strong></div>' : '') + (ev.lokasi ? '<div><span>Lokasi</span><strong>' + sanitize(ev.lokasi) + '</strong></div>' : '') + (ev.biaya || ev.harga ? '<div><span>Biaya</span><strong>' + sanitize(ev.biaya || ev.harga) + '</strong></div>' : '') + '</div><h4>Deskripsi</h4><p class="db-modal-description">' + sanitize(ev.deskripsi || 'Informasi kegiatan belum ditambahkan.') + '</p>' + (ev.persyaratanFoto ? '<div class="db-modal-requirement"><strong>Persyaratan</strong><p>' + sanitize(ev.persyaratanFoto) + '</p><small>Unggah persyaratan melalui halaman Event sebelum mendaftar.</small></div>' : '');
+  document.getElementById('dbModalFooter').innerHTML = '<button type="button" class="btn btn-outline" onclick="closeDashboardEventDetail()">Tutup</button>' + (registered ? '<button class="db-event-action is-registered" disabled>✓ Sudah terdaftar</button>' : (!open ? '<button class="db-event-action" disabled>Pendaftaran ditutup</button>' : (ev.persyaratanFoto ? '<button class="db-event-action" onclick="openDashboardEventRequirements(\'' + sanitize(eventId) + '\')">Lanjut ke persyaratan</button>' : '<button class="db-event-action" onclick="registerToEvent(\'' + sanitize(eventId) + '\')">Daftar sekarang →</button>')));
+  modal.hidden = false; document.body.classList.add('db-modal-open');
+}
+function closeDashboardEventDetail() { const modal = document.getElementById('dashboardEventModal'); if (modal) modal.hidden = true; document.body.classList.remove('db-modal-open'); }
 async function refreshDashboardEvents() {
   await fetchDashboardEvents();
   renderView();
