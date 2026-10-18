@@ -52,7 +52,7 @@ function loadUser() {
 
 function checkAuth() {
   if (!state.user) {
-    window.location.href = "login.html";
+    window.location.href = "login.html?v=20261018-2";
     return false;
   }
   return true;
