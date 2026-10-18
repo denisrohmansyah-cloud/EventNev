@@ -214,6 +214,7 @@ function doGet(e) {
       case "getStats":        result = adminGetStats(params); break;
       case "addEvent":         result = adminSaveRecord_("Events", params, "event"); break;
       case "updateEvent":      result = adminSaveRecord_("Events", params, "event"); break;
+      case "deleteEvent":       result = adminDeleteEvent_(params); break;
       case "addTrainer":       result = adminSaveRecord_("Trainers", params, "trainer"); break;
       case "updateTrainer":    result = adminSaveRecord_("Trainers", params, "trainer"); break;
       default:
@@ -579,6 +580,28 @@ function adminGetStats() {
 /* =========================================================
    ADMIN EDITOR — EVENT & TRAINER
    ========================================================= */
+function adminDeleteEvent_(p) {
+  const eventId = String(p.eventId || '').trim();
+  const email = String(p.adminEmail || '').trim().toLowerCase();
+  if (!eventId || !email) return { success: false, message: 'Data penghapusan tidak lengkap.' };
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const admin = users.find(u => String(u.email || '').trim().toLowerCase() === email && String(u.jenis || '').trim() === 'Admin');
+  if (!admin) return { success: false, message: 'Akses ditolak. Hanya admin yang dapat menghapus event.' };
+  const sheet = getSheet(SHEET.EVENTS);
+  const data = sheet.getDataRange().getValues();
+  if (!data.length) return { success: false, message: 'Data event tidak ditemukan.' };
+  const headers = data[0].map(h => String(h).trim());
+  const idIndex = headers.indexOf('id');
+  if (idIndex < 0) return { success: false, message: 'Kolom id tidak ditemukan pada sheet Events.' };
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idIndex]) === eventId) {
+      sheet.deleteRow(i + 1);
+      return { success: true, message: 'Event berhasil dihapus.' };
+    }
+  }
+  return { success: false, message: 'Event tidak ditemukan.' };
+}
+
 function adminSaveRecord_(sheetName, p, type) {
   // Pastikan pemanggil menyatakan email admin yang terdaftar.
   // Catatan: untuk keamanan produksi, endpoint perlu session token server-side.
