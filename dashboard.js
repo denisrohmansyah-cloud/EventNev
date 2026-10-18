@@ -300,24 +300,31 @@ function renderApplications() {
 
 function buildAppCard(app) {
   const statusMap = {
-    "pending":  { text: "Menunggu", cls: "badge-openlab" },
-    "approved": { text: "Disetujui ✓", cls: "badge-open" },
-    "rejected": { text: "Ditolak", cls: "badge-closed" },
-    "hadir":    { text: "Hadir ✓", cls: "badge-open" },
+    pending: { text: "Menunggu", cls: "badge-openlab" },
+    approved: { text: "Disetujui ✓", cls: "badge-open" },
+    rejected: { text: "Ditolak", cls: "badge-closed" },
+    hadir: { text: "Hadir ✓", cls: "badge-open" },
+    cancelled: { text: "Dibatalkan", cls: "badge-closed" },
+    dibatalkan: { text: "Dibatalkan", cls: "badge-closed" }
   };
-  const s = (app.status || "pending").toLowerCase();
+  const s = String(app.status || "pending").toLowerCase();
   const info = statusMap[s] || { text: sanitize(app.status || "—"), cls: "badge-openlab" };
-  return `
-    <div class="db-app-card">
-      <div class="db-app-icon">📋</div>
-      <div class="db-app-info">
-        <h4>${sanitize(app.namaEvent || app.eventId || "Kegiatan")}</h4>
-        <p>${sanitize(app.kategori || "")} ${app.tanggalDaftar ? "· Daftar: " + formatDate(app.tanggalDaftar) : ""}</p>
-      </div>
-      <div class="db-app-status">
-        <span class="event-badge ${info.cls}">${info.text}</span>
-      </div>
-    </div>`;
+  const canCancel = ["pending", "menunggu"].includes(s) && app.id;
+  return '<div class="db-app-card"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
+    (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\'' + sanitize(app.id) + '\')">Batalkan pendaftaran</button>' : "") +
+    '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div></div>';
+}
+
+async function cancelMyApplication(applicationId) {
+  const app = state.applications.find(item => String(item.id) === String(applicationId));
+  if (!app) { toast("Pendaftaran tidak ditemukan.", "error"); return; }
+  if (!["pending", "menunggu"].includes(String(app.status || "pending").toLowerCase())) { toast("Pendaftaran ini sudah diproses dan tidak dapat dibatalkan dari dashboard.", "error"); return; }
+  if (!confirm("Batalkan pendaftaran untuk " + (app.namaEvent || "kegiatan ini") + "? Tindakan ini tidak dapat diurungkan.")) return;
+  try {
+    const result = await apiFetch({ action: "cancelApplication", userId: state.user.id || state.user.email, applicationId: String(applicationId) });
+    if (!result || !result.success) { toast(result?.message || "Pendaftaran gagal dibatalkan.", "error"); return; }
+    await fetchApplications(); renderView(); toast(result.message || "Pendaftaran berhasil dibatalkan.", "success");
+  } catch (err) { console.error("Pembatalan pendaftaran gagal:", err); toast("Tidak dapat menghubungi server. Coba lagi.", "error"); }
 }
 
 /* --- CERTIFICATES --- */
