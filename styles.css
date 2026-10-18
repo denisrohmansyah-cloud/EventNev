@@ -1670,3 +1670,36 @@ p  { font-size: 1rem; line-height: 1.7; }
     max-height: min(300px, 36dvh) !important;
   }
 }
+
+/* Keep the poster at its natural aspect ratio and use the full available modal width */
+#eventModal #modalContent > .modal-img {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
+  border-radius: 0 !important;
+}
+@media (max-width: 640px) {
+  #eventModal #modalContent > .modal-img {
+    height: auto !important;
+    max-height: none !important;
+  }
+  #eventModal #modalContent > .modal-img img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
