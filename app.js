@@ -270,21 +270,59 @@ function loadDemoEvents() {
 }
 
 function updateImpactStats() {
-  const count = state.events.length;
-  ["liveEventCount", "impactEvents"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) animateCounter(el, count);
-  });
+  const el = document.getElementById("impactEvents");
+  if (el) animateCounter(el, state.events.length);
+}
+
+function runImpactCounter(el, target) {
+  const numericTarget = Number(target);
+  if (!Number.isFinite(numericTarget) || numericTarget < 0 || el.dataset.countAnimated === "true") return;
+  el.dataset.countAnimated = "true";
+  const duration = 900;
+  const startTime = performance.now();
+  function frame(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(numericTarget * eased).toLocaleString("id-ID");
+    if (progress < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 
 function animateCounter(el, target) {
-  let start = 0;
-  const step = target / 30;
-  const timer = setInterval(() => {
-    start += step;
-    el.textContent = Math.floor(Math.min(start, target));
-    if (start >= target) clearInterval(timer);
-  }, 30);
+  if (!el) return;
+  const sectionStats = el.closest("#impactStats");
+  if (sectionStats) {
+    el.dataset.countTarget = String(target);
+    el.dataset.countAnimated = "false";
+    el.textContent = "—";
+    if (sectionStats.classList.contains("is-visible")) runImpactCounter(el, target);
+    return;
+  }
+  runImpactCounter(el, target);
+}
+
+function initImpactStatsAnimation() {
+  const stats = document.getElementById("impactStats");
+  if (!stats) return;
+  if (!("IntersectionObserver" in window)) {
+    stats.classList.add("is-visible");
+    stats.querySelectorAll("[data-count-target]").forEach(el => {
+      if (el.dataset.countTarget !== "") runImpactCounter(el, el.dataset.countTarget);
+    });
+    return;
+  }
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      stats.classList.add("is-visible");
+      stats.querySelectorAll("[data-count-target]").forEach(el => {
+        if (el.dataset.countTarget !== "") runImpactCounter(el, el.dataset.countTarget);
+      });
+      observer.unobserve(stats);
+    });
+  }, { threshold: 0.25 });
+  observer.observe(stats);
 }
 
 /* =========================================================
@@ -562,11 +600,9 @@ function initModalClose() {
 async function fetchAlumniCount() {
   try {
     const data = await apiFetch({ action: "getAlumniCount" });
-    const count = data.count || data.total || data;
-    ["alumniCount", "impactAlumniCount"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && typeof count === "number") animateCounter(el, count);
-    });
+    const count = data.count ?? data.total ?? data;
+    const el = document.getElementById("impactAlumniCount");
+    if (el && typeof count === "number") animateCounter(el, count);
   } catch {
     // Keep default "—"
   }
@@ -575,8 +611,8 @@ async function fetchAlumniCount() {
 async function fetchPesertaCount() {
   try {
     const data = await apiFetch({ action: "getPesertaCount" });
-    const count = data.count || data.total || 0;
-    const el = document.getElementById("pesertaCount");
+    const count = data.count ?? data.total ?? 0;
+    const el = document.getElementById("impactPesertaCount");
     if (el && typeof count === "number") animateCounter(el, count);
   } catch {
     // Keep default "—"
@@ -587,6 +623,7 @@ async function fetchPesertaCount() {
    INIT
    ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
+  initImpactStatsAnimation();
   loadUser();
   updateAuthUI();
   initFilters();
