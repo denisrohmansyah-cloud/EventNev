@@ -152,7 +152,7 @@ window.showEventForm = function(id = "") {
     <div class="admin-editor-grid">
       ${editorField("nama","Nama event",ev.nama,"text",true)}
       <label class="admin-editor-label">Kategori *<select name="kategori" required><option value="">Pilih kategori</option>${["Open Lab","Bootcamp","Open Recruitment"].map(x=>`<option value="${x}" ${ev.kategori===x?"selected":""}>${x}</option>`).join("")}</select></label>
-      ${editorField("tanggal","Tanggal pelaksanaan *",String(ev.tanggal || "").slice(0,10),"date",true)}
+      ${editorField("tanggal","Tanggal pelaksanaan",String(ev.tanggal || "").slice(0,10),"date",true)}
       ${editorField("batasPendaftaran","Penutupan pendaftaran",String(ev.batasPendaftaran || "").slice(0,10),"date")}
       <label class="admin-editor-label">Peserta untuk<select name="sasaran"><option value="">Semua sasaran</option>${["Mahasiswa","Siswa","Umum"].map(x=>`<option value="${x}" ${ev.sasaran===x?"selected":""}>${x}</option>`).join("")}</select></label>
       ${editorField("waktu","Waktu pelaksanaan",ev.waktu,"time")}
