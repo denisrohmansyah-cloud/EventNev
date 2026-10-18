@@ -217,6 +217,7 @@ function doGet(e) {
       case "deleteEvent":       result = adminDeleteEvent_(params); break;
       case "addTrainer":       result = adminSaveRecord_("Trainers", params, "trainer"); break;
       case "updateTrainer":    result = adminSaveRecord_("Trainers", params, "trainer"); break;
+      case "deleteTrainer":     result = adminDeleteTrainer_(params); break;
       default:
         result = { success: false, message: "Aksi tidak dikenal: " + action };
     }
@@ -580,6 +581,24 @@ function adminGetStats() {
 /* =========================================================
    ADMIN EDITOR — EVENT & TRAINER
    ========================================================= */
+function adminDeleteTrainer_(p) {
+  const trainerId = String(p.trainerId || "").trim();
+  const email = String(p.adminEmail || "").trim().toLowerCase();
+  if (!trainerId || !email) return { success: false, message: "Data penghapusan tidak lengkap." };
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const admin = users.find(u => String(u.email || "").trim().toLowerCase() === email && String(u.jenis || "").trim() === "Admin");
+  if (!admin) return { success: false, message: "Akses ditolak. Hanya admin yang dapat menghapus trainer." };
+  const sheet = getSheet(SHEET.TRAINERS);
+  const data = sheet.getDataRange().getValues();
+  if (!data.length) return { success: false, message: "Data trainer tidak ditemukan." };
+  const headers = data[0].map(h => String(h).trim());
+  const idIndex = headers.indexOf("id");
+  if (idIndex < 0) return { success: false, message: "Kolom id tidak ditemukan pada sheet Trainers." };
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idIndex]) === trainerId) { sheet.deleteRow(i + 1); return { success: true, message: "Trainer berhasil dihapus." }; }
+  }
+  return { success: false, message: "Trainer tidak ditemukan." };
+}
 function adminDeleteEvent_(p) {
   const eventId = String(p.eventId || '').trim();
   const email = String(p.adminEmail || '').trim().toLowerCase();
