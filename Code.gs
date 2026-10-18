@@ -1,4 +1,25 @@
 /**
+ * Jalankan fungsi ini sekali dari editor Apps Script untuk memicu otorisasi Google Drive.
+ * Setelah izin diberikan, upload gambar melalui Web App dapat membuat folder penyimpanan.
+ */
+function authorizeEventNevDrive() {
+  const folderName = 'EventNev - Gambar Event dan Trainer';
+  const props = PropertiesService.getScriptProperties();
+  const key = 'EVENTNEV_PUBLIC_IMAGES_FOLDER_ID';
+  let folder = null;
+  const savedId = props.getProperty(key);
+  if (savedId) {
+    try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {}
+  }
+  if (!folder) {
+    folder = DriveApp.createFolder(folderName);
+    props.setProperty(key, folder.getId());
+  }
+  Logger.log('Otorisasi Drive siap. Folder ID: ' + folder.getId());
+  return folder.getId();
+}
+
+/**
  * EventNev — Code.gs
  * Google Apps Script backend untuk portal EventNev
  * 
