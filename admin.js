@@ -151,13 +151,15 @@ window.showEventForm = function(id = "") {
     <input type="hidden" name="id" value="${sanitize(ev.id || "")}">
     <div class="admin-editor-grid">
       ${editorField("nama","Nama event",ev.nama,"text",true)}
-      ${editorField("kategori","Kategori",ev.kategori,"text",true)}
-      ${editorField("tanggal","Tanggal",String(ev.tanggal || "").slice(0,10),"date",true)}
-      ${editorField("waktu","Waktu",ev.waktu)}
+      <label class="admin-editor-label">Kategori *<select name="kategori" required><option value="">Pilih kategori</option>${["Open Lab","Bootcamp","Open Recruitment"].map(x=>`<option value="${x}" ${ev.kategori===x?"selected":""}>${x}</option>`).join("")}</select></label>
+      ${editorField("tanggal","Tanggal pelaksanaan *",String(ev.tanggal || "").slice(0,10),"date",true)}
+      ${editorField("batasPendaftaran","Penutupan pendaftaran",String(ev.batasPendaftaran || "").slice(0,10),"date")}
+      <label class="admin-editor-label">Peserta untuk<select name="sasaran"><option value="">Semua sasaran</option>${["Mahasiswa","Siswa","Umum"].map(x=>`<option value="${x}" ${ev.sasaran===x?"selected":""}>${x}</option>`).join("")}</select></label>
+      ${editorField("waktu","Waktu pelaksanaan",ev.waktu,"time")}
       ${editorField("lokasi","Lokasi",ev.lokasi,"text",true)}
       ${editorField("kuota","Kuota peserta",ev.kuota,"number")}
       ${editorField("biaya","Biaya",ev.biaya)}
-      ${editorField("status","Status (Buka/Tutup)",ev.status || "Buka")}
+      <label class="admin-editor-label">Status<select name="status"><option value="Buka" ${!ev.status || ev.status==="Buka" || ev.status==="Terbuka" ? "selected":""}>Terbuka</option><option value="Tutup" ${ev.status==="Tutup" ? "selected":""}>Ditutup</option></select></label>
       <label class="admin-editor-label">Foto event<input name="gambarFile" type="file" accept="image/*"><small>Format gambar, maksimal 5 MB.</small><input type="hidden" name="gambar" value="${sanitize(ev.gambar || "")}"></label>
     </div>
     <label class="admin-editor-label">Deskripsi<textarea name="deskripsi" rows="3">${sanitize(ev.deskripsi || "")}</textarea></label>
