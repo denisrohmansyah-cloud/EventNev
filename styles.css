@@ -1813,3 +1813,39 @@ p  { font-size: 1rem; line-height: 1.7; }
   #eventModal #modalContent > .modal-body { padding: 16px !important; }
   #eventModal #modalContent .modal-actions { flex-direction: row !important; }
 }
+
+
+/* Final requested sizing: desktop 360px, mobile 340px; poster fills modal width */
+#eventModal > section.modal {
+  flex: 0 1 360px !important;
+  width: min(360px, calc(100vw - 40px)) !important;
+  max-width: 360px !important;
+}
+#eventModal #modalContent > .modal-img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+@media (max-width: 640px) {
+  #eventModal > section.modal {
+    flex: 0 1 340px !important;
+    width: min(340px, calc(100vw - 24px)) !important;
+    max-width: 340px !important;
+  }
+  #eventModal #modalContent > .modal-img,
+  #eventModal #modalContent > .modal-img img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
