@@ -139,6 +139,17 @@ p  { font-size: 1rem; line-height: 1.7; }
   transition: background var(--transition);
 }
 
+/* Daftar sekarang — red pill button di pojok kanan */
+.topbar-daftar {
+  border-radius: 100px !important;
+  padding: 10px 22px !important;
+  font-size: .875rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -216,7 +227,7 @@ p  { font-size: 1rem; line-height: 1.7; }
   padding-top: 32px;
   border-top: 1px solid var(--dark-4);
 }
-.hero-stats > div { display: flex; flex-direction: column; }
+.hero-stats > div { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hero-stats b { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; }
 .hero-stats small { font-size: .75rem; color: var(--text-dim); margin-top: 2px; }
 
