@@ -2075,3 +2075,69 @@ p  { font-size: 1rem; line-height: 1.7; }
 @media (max-width: 640px) {
   #eventModal > section.modal::before { height: 40px; flex-basis: 40px; }
 }
+
+
+/* Clean poster-first modal: no empty header strip, no poster crop */
+#eventModal > section.modal {
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  border-radius: 18px !important;
+  position: relative !important;
+}
+#eventModal > section.modal::before {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  flex: 0 0 0 !important;
+}
+#eventModal #modalContent,
+#eventModal #modalContent > .modal-img {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+#eventModal #modalContent > .modal-img {
+  display: block !important;
+  overflow: hidden !important;
+  line-height: 0 !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+#eventModal .modal-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  float: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255,255,255,.35) !important;
+  background: rgba(20,20,24,.78) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
+  z-index: 50 !important;
+}
+#eventModal #modalContent > .modal-body {
+  padding: 16px !important;
+}
+@media (max-width: 640px) {
+  #eventModal > section.modal { border-radius: 16px !important; }
+  #eventModal .modal-close { top: 8px !important; right: 8px !important; }
+}
