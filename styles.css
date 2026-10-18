@@ -1849,3 +1849,144 @@ p  { font-size: 1rem; line-height: 1.7; }
     max-height: none !important;
   }
 }
+
+
+/* Event cards and detail modal: compact, balanced, dark and responsive */
+#eventGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 340px)) !important;
+  justify-content: start !important;
+  gap: 22px !important;
+}
+#eventGrid .event-card {
+  width: 100% !important;
+  max-width: 340px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+}
+#eventGrid .event-card-img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  background: #24242b !important;
+}
+#eventGrid .event-card-img img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
+}
+#eventGrid .event-card-body { padding: 16px !important; }
+#eventGrid .event-card-body h3 { font-size: 17px !important; line-height: 1.35 !important; }
+#eventGrid .event-card-body > p {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#eventGrid .event-card-footer { padding: 12px 16px !important; }
+
+#eventModal.modal-backdrop {
+  padding: 16px !important;
+  overflow-y: auto !important;
+  background: rgba(0,0,0,.78) !important;
+}
+#eventModal > section.modal {
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: 0 1 360px !important;
+  width: min(360px, calc(100vw - 32px)) !important;
+  max-width: 360px !important;
+  max-height: 88vh !important;
+  max-height: 88dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #555560 #1b1b20 !important;
+  background: #1b1b20 !important;
+  color: #f1f1f5 !important;
+  border: 1px solid #34343d !important;
+  border-radius: 18px !important;
+}
+#eventModal > section.modal::-webkit-scrollbar { width: 6px !important; }
+#eventModal > section.modal::-webkit-scrollbar-track { background: #1b1b20 !important; }
+#eventModal > section.modal::-webkit-scrollbar-thumb { background: #555560 !important; border-radius: 8px !important; }
+#eventModal #modalContent,
+#eventModal #modalContent > .modal-img,
+#eventModal #modalContent > .modal-body {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  background: #1b1b20 !important;
+  color: #f1f1f5 !important;
+}
+#eventModal #modalContent > .modal-img {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+#eventModal #modalContent > .modal-img img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+#eventModal #modalContent > .modal-body { padding: 16px !important; }
+#eventModal #modalContent > .modal-body h2 { font-size: 17px !important; line-height: 1.35 !important; }
+#eventModal #modalContent .modal-meta-row,
+#eventModal #modalContent > .modal-body p { font-size: 13px !important; line-height: 1.5 !important; }
+#eventModal #modalContent .modal-actions {
+  position: static !important;
+  display: flex !important;
+  gap: 8px !important;
+  padding: 12px 0 0 !important;
+  margin: 0 !important;
+  background: #1b1b20 !important;
+}
+#eventModal #modalContent .modal-actions .btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  padding: 9px 10px !important;
+  font-size: 13px !important;
+  white-space: normal !important;
+}
+#eventModal .modal-close {
+  position: sticky !important;
+  top: 8px !important;
+  float: right !important;
+  margin: 8px 8px -36px 0 !important;
+  z-index: 10 !important;
+  background: rgba(28,28,34,.95) !important;
+  color: #f1f1f5 !important;
+  border: 1px solid #454550 !important;
+}
+@media (max-width: 640px) {
+  #eventGrid {
+    grid-template-columns: minmax(0, 340px) !important;
+    justify-content: center !important;
+    gap: 18px !important;
+  }
+  #eventGrid .event-card { max-width: 340px !important; }
+  #eventModal.modal-backdrop { padding: 10px !important; }
+  #eventModal > section.modal {
+    flex: 0 1 340px !important;
+    width: min(340px, calc(100vw - 20px)) !important;
+    max-width: 340px !important;
+    max-height: 90dvh !important;
+    border-radius: 16px !important;
+  }
+}
