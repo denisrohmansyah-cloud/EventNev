@@ -805,18 +805,30 @@ p  { font-size: 1rem; line-height: 1.7; }
   border: 1px solid #1b1b1b;
   border-radius: 0;
   text-decoration: none;
-  transition: border-color .2s ease, background .2s ease;
+  overflow: hidden;
+  transition: border-color .28s ease, background .28s ease, transform .28s ease, box-shadow .28s ease;
 }
-.findus-card:hover {
-  border-color: #ff1744;
-  background: #0b0b0b;
-}
-.findus-card:first-child::before {
+.findus-card::before {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
   background: #ff1744;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform .28s ease;
+}
+.findus-card:hover,
+.findus-card:focus-visible {
+  border-color: #ff1744;
+  background: #10070a;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(255, 23, 68, .10);
+  outline: none;
+}
+.findus-card:hover::before,
+.findus-card:focus-visible::before {
+  transform: scaleY(1);
 }
 .findus-icon {
   width: 22px;
@@ -824,9 +836,14 @@ p  { font-size: 1rem; line-height: 1.7; }
   flex: 0 0 22px;
   color: #8a8a8e;
   margin: 0;
+  transition: color .28s ease, transform .28s ease;
 }
-.findus-card:first-child .findus-icon { color: #ff1744; }
 .findus-icon svg { width: 100%; height: 100%; }
+.findus-card:hover .findus-icon,
+.findus-card:focus-visible .findus-icon {
+  color: #ff1744;
+  transform: scale(1.12);
+}
 .findus-copy { min-width: 0; }
 .findus-name {
   font-size: .9rem;
@@ -834,16 +851,35 @@ p  { font-size: 1rem; line-height: 1.7; }
   color: #f5f5f5;
   letter-spacing: .08em;
   margin-bottom: 6px;
+  transition: color .28s ease;
 }
-.findus-card:first-child .findus-name { color: #ff1744; }
+.findus-card:hover .findus-name,
+.findus-card:focus-visible .findus-name {
+  color: #ff1744;
+}
 .findus-handle {
   font-size: .8rem;
   line-height: 1.4;
   color: #696970;
   margin: 0;
   overflow-wrap: anywhere;
+  transition: color .28s ease;
+}
+.findus-card:hover .findus-handle,
+.findus-card:focus-visible .findus-handle {
+  color: #a7a7ae;
 }
 .findus-link { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .findus-card,
+  .findus-card::before,
+  .findus-icon,
+  .findus-name,
+  .findus-handle {
+    transition: none;
+  }
+}
 .footer-bottom {
   border-top: 1px solid #1b1b1b;
   padding: 40px 5.6% 32px;
