@@ -609,24 +609,65 @@
         if (!s || !ni || !as || !j) { alert('Mohon lengkapi data kesiswaan.'); return; }
       }
 
-      // Tanpa verifikasi email: tampilkan animasi sukses lalu kembali ke menu Masuk.
-      var loginEmail = document.getElementById('login-email');
-      if (loginEmail) loginEmail.value = email;
+      // Simpan akun ke Google Apps Script terlebih dahulu agar dapat digunakan untuk login.
+      const registerButton = document.querySelector('#panel-daftar .btn-primary');
+      const originalRegisterLabel = registerButton ? registerButton.textContent : 'Daftar';
+      if (registerButton) { registerButton.disabled = true; registerButton.textContent = 'Membuat akun…'; }
 
-      var success = document.getElementById('accountSuccess');
-      if (success) {
-        success.classList.add('show');
-        success.setAttribute('aria-hidden', 'false');
-      }
+      try {
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('action', 'register');
+        url.searchParams.set('nama', nama);
+        url.searchParams.set('email', email.toLowerCase());
+        url.searchParams.set('noHp', hp);
+        url.searchParams.set('jenis', jenis);
+        url.searchParams.set('password', pass);
 
-      window.setTimeout(function () {
-        if (success) {
-          success.classList.remove('show');
-          success.setAttribute('aria-hidden', 'true');
+        // Simpan juga data pendidikan bila peserta mengisinya.
+        if (jenis === 'mahasiswa') {
+          url.searchParams.set('universitas', document.getElementById('mhs-univ').value.trim());
+          url.searchParams.set('nim', document.getElementById('mhs-nim').value.trim());
+          url.searchParams.set('angkatan', document.getElementById('mhs-angkatan').value.trim());
+          url.searchParams.set('prodi', document.getElementById('mhs-prodi').value.trim());
+          url.searchParams.set('fakultas', document.getElementById('mhs-fakultas').value.trim());
+        } else if (jenis === 'siswa') {
+          url.searchParams.set('sekolah', document.getElementById('siswa-sekolah').value.trim());
+          url.searchParams.set('nisn', document.getElementById('siswa-nisn').value.trim());
+          url.searchParams.set('angkatan', document.getElementById('siswa-angkatan').value.trim());
+          url.searchParams.set('jurusan', document.getElementById('siswa-jurusan').value.trim());
         }
-        switchTab('masuk');
-        document.getElementById('login-email')?.focus();
-      }, 1800);
+
+        const response = await fetch(url.toString());
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+        if (!result.success) {
+          alert(result.message || 'Pendaftaran gagal disimpan. Silakan coba lagi.');
+          return;
+        }
+
+        var loginEmail = document.getElementById('login-email');
+        if (loginEmail) loginEmail.value = email;
+
+        var success = document.getElementById('accountSuccess');
+        if (success) {
+          success.classList.add('show');
+          success.setAttribute('aria-hidden', 'false');
+        }
+
+        window.setTimeout(function () {
+          if (success) {
+            success.classList.remove('show');
+            success.setAttribute('aria-hidden', 'true');
+          }
+          switchTab('masuk');
+          document.getElementById('login-email')?.focus();
+        }, 1800);
+      } catch (err) {
+        console.error('Registrasi EventNev gagal:', err);
+        alert('Tidak dapat menyimpan akun ke server. Periksa koneksi dan coba lagi.');
+      } finally {
+        if (registerButton) { registerButton.disabled = false; registerButton.textContent = originalRegisterLabel; }
+      }
     }
 
     configureLoginMode();
