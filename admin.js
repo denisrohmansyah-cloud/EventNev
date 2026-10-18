@@ -56,7 +56,7 @@ function checkAdmin() {
     document.getElementById("sidebarName").textContent = user.nama || "Admin";
     return true;
   } catch {
-    window.location.href = "login.html";
+    window.location.href = "login.html?role=admin";
     return false;
   }
 }
@@ -342,7 +342,7 @@ function initLogout() {
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
     if (confirm("Keluar?")) {
       localStorage.removeItem("nevUser");
-      window.location.href = "login.html";
+      window.location.href = "login.html?role=admin";
     }
   });
 }
