@@ -34,12 +34,40 @@ function formatDate(d) {
   catch { return d; }
 }
 
+let nevLoadingCount = 0;
+let nevLoadingTimer = null;
+function setNevLoading(active, message) {
+  nevLoadingCount = Math.max(0, nevLoadingCount + (active ? 1 : -1));
+  let el = document.getElementById("nevGlobalLoading");
+  if (!el && active) {
+    el = document.createElement("div");
+    el.id = "nevGlobalLoading";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    el.innerHTML = '<span class="nev-loading-spinner"></span><span class="nev-loading-message"></span>';
+    el.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(8,8,11,.48);backdrop-filter:blur(2px);color:#fff;font:600 14px system-ui,sans-serif";
+    const style = document.createElement("style");
+    style.textContent = "#nevGlobalLoading .nev-loading-spinner{width:25px;height:25px;border:3px solid rgba(255,255,255,.25);border-top-color:#ed2632;border-radius:50%;animation:nevSpin .7s linear infinite}#nevGlobalLoading .nev-loading-message{background:#19191f;border:1px solid #383840;border-radius:10px;padding:13px 16px;box-shadow:0 8px 28px #0005}@keyframes nevSpin{to{transform:rotate(360deg)}}";
+    document.head.appendChild(style);
+    document.body.appendChild(el);
+  }
+  if (el) {
+    if (active) el.querySelector(".nev-loading-message").textContent = message || "Memuat data akun…";
+    if (nevLoadingCount === 0) el.remove();
+  }
+}
 async function apiFetch(params) {
-  const url = new URL(SCRIPT_URL);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+  setNevLoading(true, "Memuat data akun…");
+  try {
+    const url = new URL(SCRIPT_URL);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } finally {
+    setNevLoading(false);
+  }
 }
 
 /* === AUTH === */
