@@ -429,7 +429,7 @@ function openEventModal(ev) {
 
   const isOpen = /buka|open/i.test(ev.status || "");
   const imgHtml = ev.gambar
-    ? `<div class="modal-img"><img src="${sanitize(ev.gambar)}" alt="${sanitize(ev.nama)}"></div>`
+    ? `<div class="modal-img"><img src="${sanitize(normalizePublicImageUrl(ev.gambar))}" alt="${sanitize(ev.nama)}" loading="eager" referrerpolicy="no-referrer"></div>`
     : `<div class="modal-img" style="font-size:3rem;">📋</div>`;
 
   content.innerHTML = `
