@@ -636,7 +636,7 @@ function adminSaveRecord_(sheetName, p, type) {
   const isEvent = type === "event";
   const fields = isEvent
     ? ["nama","kategori","deskripsi","tanggal","batasPendaftaran","sasaran","waktu","lokasi","kuota","biaya","syarat","persyaratanFoto","status","gambar"]
-    : ["nama","jabatan","keahlian","foto","bio","urutan"];
+    : ["nama","jabatan","keahlian","foto","bio","instagram","linkedin","urutan"];
 
   if (!String(p.nama || "").trim()) return { success: false, message: "Nama wajib diisi." };
   if (isEvent && (!String(p.kategori || "").trim() || !String(p.tanggal || "").trim())) {
