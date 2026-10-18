@@ -2035,3 +2035,43 @@ p  { font-size: 1rem; line-height: 1.7; }
   #eventModal > section.modal { padding-top: 40px !important; }
   #eventModal .modal-close { top: 6px !important; right: 8px !important; }
 }
+
+
+/* Keep the close button in its own header strip so it never covers the poster */
+#eventModal > section.modal {
+  padding-top: 0 !important;
+}
+#eventModal > section.modal::before {
+  content: "";
+  display: block;
+  height: 42px;
+  width: 100%;
+  flex: 0 0 42px;
+  background: #1b1b20;
+}
+#eventModal .modal-close {
+  top: 6px !important;
+  right: 8px !important;
+  z-index: 30 !important;
+}
+#eventModal #modalContent {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#eventModal #modalContent > .modal-img {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+#eventModal #modalContent > .modal-img img {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
+  border-radius: 0 !important;
+}
+@media (max-width: 640px) {
+  #eventModal > section.modal::before { height: 40px; flex-basis: 40px; }
+}
