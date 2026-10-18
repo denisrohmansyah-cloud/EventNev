@@ -547,7 +547,10 @@
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const result = await response.json();
         if (!result.success || !result.user) {
-          alert(result.message || 'Email atau password tidak valid.');
+          const fallbackMessage = adminLoginMode
+            ? 'Login admin ditolak oleh backend. Periksa sheet Users: email harus terdaftar, password harus sama dengan saat akun dibuat, dan kolom jenis harus bernilai persis Admin. Jangan isi passwordHash dengan password biasa.'
+            : 'Email atau password tidak valid. Pastikan akun sudah terdaftar dan gunakan password yang benar.';
+          alert(result.message || fallbackMessage);
           return;
         }
 
