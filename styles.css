@@ -1209,3 +1209,49 @@ p  { font-size: 1rem; line-height: 1.7; }
   .modal-actions { flex-direction: column; }
   .modal-actions .btn { width: 100%; }
 }
+
+
+/* Final override for event detail modal sizing */
+#eventModal {
+  padding: 16px !important;
+}
+#eventModal > .modal {
+  width: min(440px, calc(100vw - 32px)) !important;
+  max-width: 440px !important;
+  max-height: min(78vh, 680px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  margin: auto !important;
+}
+#eventModal .modal-img {
+  width: 100% !important;
+  height: 155px !important;
+  max-height: 155px !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+}
+#eventModal .modal-img img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 155px !important;
+  object-fit: contain !important;
+}
+#eventModal .modal-body { padding: 16px !important; }
+#eventModal .modal-body h2 { font-size: 1.1rem !important; }
+#eventModal .modal-meta { margin: 8px 0 !important; gap: 4px !important; }
+#eventModal .modal-actions { padding-top: 4px !important; gap: 8px !important; }
+#eventModal .modal-actions .btn { min-height: 38px !important; padding: 8px 12px !important; font-size: .85rem !important; }
+@media (max-width: 640px) {
+  #eventModal { padding: 12px !important; }
+  #eventModal > .modal {
+    width: min(360px, calc(100vw - 24px)) !important;
+    max-width: 360px !important;
+    max-height: 76dvh !important;
+  }
+  #eventModal .modal-img,
+  #eventModal .modal-img img {
+    height: 125px !important;
+    max-height: 125px !important;
+  }
+  #eventModal .modal-body { padding: 13px !important; }
+}
