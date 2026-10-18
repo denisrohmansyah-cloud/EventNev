@@ -2002,3 +2002,36 @@ p  { font-size: 1rem; line-height: 1.7; }
   width: 0 !important;
   height: 0 !important;
 }
+
+
+/* Final modal close-button correction: keep the close control out of the poster */
+#eventModal > section.modal {
+  position: relative !important;
+  padding-top: 42px !important;
+}
+#eventModal .modal-close {
+  position: absolute !important;
+  top: 8px !important;
+  right: 10px !important;
+  float: none !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 22px !important;
+  border-radius: 50% !important;
+  z-index: 20 !important;
+}
+#eventModal #modalContent > .modal-img {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+@media (max-width: 640px) {
+  #eventModal > section.modal { padding-top: 40px !important; }
+  #eventModal .modal-close { top: 6px !important; right: 8px !important; }
+}
