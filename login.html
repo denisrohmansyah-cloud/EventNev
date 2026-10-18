@@ -486,8 +486,26 @@
     function handleLogin() {
       var email = document.getElementById('login-email').value.trim();
       var pass  = document.getElementById('login-pass').value;
-      if (!email || !pass) { alert('Masukkan email dan password.'); return; }
-      alert('Login berhasil! Selamat datang di EventNev.');
+      if (!email || !pass) {
+        alert('Masukkan email dan password.');
+        return;
+      }
+
+      // Simpan sesi yang dibutuhkan dashboard lalu arahkan peserta langsung ke sana.
+      // Catatan: autentikasi pada halaman ini masih berupa demo dan belum memvalidasi kredensial ke backend.
+      var user = {
+        id: email,
+        email: email,
+        nama: email.split('@')[0],
+        jenis: 'Peserta',
+        role: 'peserta'
+      };
+      try {
+        localStorage.setItem('nevUser', JSON.stringify(user));
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        alert('Sesi login tidak dapat disimpan. Aktifkan penyimpanan browser lalu coba lagi.');
+      }
     }
 
     function handleRegister() {
