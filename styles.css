@@ -1173,3 +1173,39 @@ p  { font-size: 1rem; line-height: 1.7; }
 
 /* Center the three impact statistic values and labels. */
 #impactStats > .impact-stat { align-items: center; justify-content: center; text-align: center; }
+
+
+/* Compact event detail modal: prevent it from occupying the whole viewport */
+.event-modal,
+.modal-dialog,
+.modal-content {
+  max-width: min(680px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+.modal-img {
+  max-height: 220px;
+  aspect-ratio: 16 / 7;
+}
+.modal-img img {
+  max-height: 220px;
+  object-fit: contain;
+}
+.modal-body { padding: 20px; }
+.modal-body h2 { font-size: 1.15rem; margin-bottom: 8px; }
+.modal-body p { font-size: .86rem; line-height: 1.55; margin-bottom: 10px; }
+.modal-meta { gap: 5px; margin: 10px 0; }
+.modal-meta > div { font-size: .88rem; }
+.modal-actions { gap: 10px; }
+.modal-actions .btn { min-height: 42px; padding: 10px 14px; }
+@media (max-width: 640px) {
+  .event-modal, .modal-dialog, .modal-content {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .modal-img { max-height: 170px; aspect-ratio: 16 / 8; }
+  .modal-img img { max-height: 170px; }
+  .modal-body { padding: 15px; }
+  .modal-actions { flex-direction: column; }
+  .modal-actions .btn { width: 100%; }
+}
