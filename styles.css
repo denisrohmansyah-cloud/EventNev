@@ -613,7 +613,7 @@ p  { font-size: 1rem; line-height: 1.7; }
 .badge-openlab { background: rgba(59,130,246,.15); color: #60a5fa; }
 .badge-bootcamp { background: rgba(168,85,247,.15); color: #c084fc; }
 .badge-recruitment { background: rgba(34,197,94,.15); color: #4ade80; }
-.badge-open { background: rgba(225,38,47,.12); color: var(--red-light); }
+.badge-open { background: rgba(34,197,94,.16); color: #4ade80; border: 1px solid rgba(74,222,128,.24); }
 .badge-closed { background: rgba(107,107,120,.12); color: var(--muted); }
 
 .event-card h3 { font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
