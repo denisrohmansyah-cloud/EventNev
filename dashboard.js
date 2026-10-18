@@ -31,8 +31,30 @@ function sanitize(str) {
 
 function formatDate(d) {
   if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }); }
-  catch { return d; }
+  try {
+    const date = new Date(d);
+    if (Number.isNaN(date.getTime())) return String(d);
+    return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+  } catch { return String(d); }
+}
+
+function formatEventTime(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const raw = String(value).trim();
+  // Spreadsheet time-only cells may arrive as an ISO timestamp on 30 Dec 1899.
+  const legacy = raw.match(/^1899-12-30T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z?$/i);
+  if (legacy) {
+    // Google Sheets serializes local spreadsheet time as UTC; convert to WIB.
+    const total = (Number(legacy[1]) * 60 + Number(legacy[2]) + 7 * 60) % (24 * 60);
+    return String(Math.floor(total / 60)).padStart(2, "0") + "." + String(total % 60).padStart(2, "0") + " WIB";
+  }
+  const simple = raw.match(/^(\d{1,2})[.:](\d{2})(?:[.:](\d{2}))?$/);
+  if (simple) return String(Number(simple[1])).padStart(2, "0") + "." + simple[2] + " WIB";
+  // If the source contains a human-readable range, retain it as entered.
+  if (!/^\d{4}-\d\d-\d\dT/.test(raw)) return raw;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).replace(":", ".") + " WIB";
 }
 
 let nevLoadingCount = 0;
@@ -228,7 +250,7 @@ function buildDashboardEventCard(ev) {
   return '<article class="db-event-card"><button type="button" class="db-event-image db-event-image-button" onclick="openDashboardEventDetail(\'' + sanitize(eventId) + '\')" aria-label="Lihat detail kegiatan">' + image + '</button><div class="db-event-content">' +
     '<div class="db-event-tags"><span class="db-event-tag">' + sanitize(ev.kategori || 'Kegiatan') + '</span><span class="db-event-status ' + (open ? 'open' : 'closed') + '">' + (open ? 'Pendaftaran dibuka' : sanitize(ev.status || 'Ditutup')) + '</span></div>' +
     '<h3>' + sanitize(ev.nama || 'Kegiatan') + '</h3><p class="db-event-description">' + sanitize(ev.deskripsi || 'Informasi kegiatan belum ditambahkan.') + '</p>' +
-    '<div class="db-event-meta">' + (ev.tanggal ? '<span>📅 ' + formatDate(ev.tanggal) + '</span>' : '') + (ev.waktu ? '<span>🕒 ' + sanitize(ev.waktu) + '</span>' : '') + (ev.lokasi ? '<span>📍 ' + sanitize(ev.lokasi) + '</span>' : '') + '</div>' + action + '</div></article>';
+    '<div class="db-event-meta">' + (ev.tanggal ? '<span>📅 ' + formatDate(ev.tanggal) + '</span>' : '') + (ev.waktu ? '<span>🕒 ' + sanitize(formatEventTime(ev.waktu)) + '</span>' : '') + (ev.lokasi ? '<span>📍 ' + sanitize(ev.lokasi) + '</span>' : '') + '</div>' + action + '</div></article>';
 }
 function openDashboardEventDetail(eventId) {
   const ev = state.events.find(item => String(item.id || item.nama) === String(eventId));
