@@ -253,9 +253,30 @@
       .field-row { grid-template-columns: 1fr; gap: 0; }
       .field-row .field { margin-bottom: 16px; }
     }
+  
+    .success-overlay{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:rgba(8,8,11,.72);backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
+    .success-overlay.show{opacity:1;visibility:visible}
+    .success-card{width:min(100%,390px);padding:32px 28px;border:1px solid rgba(225,38,47,.3);border-radius:22px;background:#19191f;color:#fff;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.4);transform:translateY(18px) scale(.96);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+    .success-overlay.show .success-card{transform:translateY(0) scale(1)}
+    .success-check{width:72px;height:72px;margin:0 auto 18px;display:grid;place-items:center;border-radius:50%;background:rgba(225,38,47,.13);border:1px solid rgba(225,38,47,.35);color:#E1262F;font-size:2.1rem;font-weight:800;animation:successPop .55s cubic-bezier(.2,.8,.2,1) both}
+    .success-card h2{font-size:1.4rem;margin-bottom:9px}.success-card p{color:#b7b7c2;font-size:.92rem;line-height:1.6}
+    .success-progress{height:3px;margin-top:24px;border-radius:99px;overflow:hidden;background:#303039}.success-progress span{display:block;height:100%;width:0;background:#E1262F}
+    .success-overlay.show .success-progress span{animation:successProgress 1.8s linear forwards}
+    @keyframes successPop{0%{opacity:0;transform:scale(.55) rotate(-15deg)}70%{opacity:1;transform:scale(1.12) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
+    @keyframes successProgress{to{width:100%}}
+    @media(prefers-reduced-motion:reduce){.success-overlay,.success-card{transition:none}.success-check{animation:none}.success-overlay.show .success-progress span{animation-duration:.01ms}}
+
   </style>
 </head>
 <body>
+  <div class="success-overlay" id="accountSuccess" role="status" aria-live="polite" aria-hidden="true">
+    <div class="success-card">
+      <div class="success-check" aria-hidden="true">✓</div>
+      <h2>Akun berhasil dibuat!</h2>
+      <p>Akun kamu siap digunakan. Kamu akan diarahkan ke menu login untuk masuk ke EventNev.</p>
+      <div class="success-progress" aria-hidden="true"><span></span></div>
+    </div>
+  </div>
 
   <!-- ══ LEFT ══ -->
   <div class="left">
@@ -539,8 +560,24 @@
         if (!s || !ni || !as || !j) { alert('Mohon lengkapi data kesiswaan.'); return; }
       }
 
-      var label = { mahasiswa: 'Mahasiswa', siswa: 'Siswa', umum: 'Peserta Umum' }[jenis];
-      alert('Akun berhasil dibuat sebagai ' + label + '!\n\nSilakan cek email untuk verifikasi.');
+      // Tanpa verifikasi email: tampilkan animasi sukses lalu kembali ke menu Masuk.
+      var loginEmail = document.getElementById('login-email');
+      if (loginEmail) loginEmail.value = email;
+
+      var success = document.getElementById('accountSuccess');
+      if (success) {
+        success.classList.add('show');
+        success.setAttribute('aria-hidden', 'false');
+      }
+
+      window.setTimeout(function () {
+        if (success) {
+          success.classList.remove('show');
+          success.setAttribute('aria-hidden', 'true');
+        }
+        switchTab('masuk');
+        document.getElementById('login-email')?.focus();
+      }, 1800);
     }
 
     if (new URLSearchParams(location.search).get('tab') === 'daftar') {
