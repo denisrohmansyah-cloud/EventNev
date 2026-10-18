@@ -34,14 +34,27 @@ function setupEventNevDatabase() {
   const existingId = properties.getProperty("EVENTNEV_SPREADSHEET_ID");
 
   if (existingId) {
-    ss = SpreadsheetApp.openById(existingId);
-  } else if (SPREADSHEET_ID && SPREADSHEET_ID !== "GANTI_DENGAN_ID_SPREADSHEET_KAMU") {
-    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    properties.setProperty("EVENTNEV_SPREADSHEET_ID", ss.getId());
-  } else {
-    ss = SpreadsheetApp.create("EventNev Database");
-    properties.setProperty("EVENTNEV_SPREADSHEET_ID", ss.getId());
+    try {
+      ss = SpreadsheetApp.openById(existingId);
+    } catch (err) {
+      // Spreadsheet lama mungkin sudah dihapus. Buat database baru.
+      ss = null;
+    }
   }
+
+  if (!ss && SPREADSHEET_ID && SPREADSHEET_ID !== "GANTI_DENGAN_ID_SPREADSHEET_KAMU") {
+    try {
+      ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (err) {
+      ss = null;
+    }
+  }
+
+  if (!ss) {
+    ss = SpreadsheetApp.create("EventNev Database");
+  }
+
+  properties.setProperty("EVENTNEV_SPREADSHEET_ID", ss.getId());
 
   const schemas = {
     Users: ["id", "nama", "email", "noHp", "jenis", "passwordHash", "poin", "createdAt"],
