@@ -210,6 +210,7 @@ function doGet(e) {
       case "absen":           result = handleAbsen(params); break;
       // Admin
       case "getAllApplications": result = adminGetAllApplications(params); break;
+      case "getCertificates": result = adminGetCertificates_(params); break;
       case "getUsers":        result = adminGetUsers(params); break;
       case "updateStatus":    result = adminUpdateStatus(params); break;
       case "deleteApp":       result = adminDeleteApp(params); break;
@@ -232,6 +233,7 @@ function doGet(e) {
 function doPost(e) {
   try {
     const p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (p.action === 'uploadCertificate') return jsonResponse(adminUploadCertificate_(p));
     if (p.action === 'uploadAdminImage') {
       const email = String(p.adminEmail || '').trim().toLowerCase();
       const users = sheetToObjects(getSheet(SHEET.USERS));
@@ -545,6 +547,72 @@ function handleAbsen(p) {
 /* =========================================================
    ADMIN
    ========================================================= */
+
+function isEventNevAdmin_(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) return false;
+  return sheetToObjects(getSheet(SHEET.USERS)).some(u =>
+    String(u.email || "").trim().toLowerCase() === normalized &&
+    String(u.jenis || "").trim().toLowerCase() === "admin"
+  );
+}
+
+function adminGetCertificates_(p) {
+  if (!isEventNevAdmin_(p.adminEmail)) return { success: false, message: "Akses ditolak. Hanya admin yang dapat melihat sertifikat." };
+  return sheetToObjects(getSheet(SHEET.CERTIFICATES)).filter(c => c.id);
+}
+
+function adminUploadCertificate_(p) {
+  const email = String(p.adminEmail || "").trim().toLowerCase();
+  if (!isEventNevAdmin_(email)) return { success: false, message: "Akses upload hanya untuk admin." };
+
+  const userId = String(p.userId || "").trim();
+  const eventId = String(p.eventId || "").trim();
+  const eventName = String(p.namaEvent || "").trim();
+  if (!userId || !eventName) return { success: false, message: "Pilih peserta dan isi nama kegiatan/sertifikat." };
+
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const user = users.find(u => String(u.id || "") === userId);
+  if (!user) return { success: false, message: "Peserta tidak ditemukan. Muat ulang daftar peserta." };
+
+  const mime = String(p.mimeType || "").toLowerCase();
+  const allowedMime = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+  if (allowedMime.indexOf(mime) < 0) return { success: false, message: "Format tidak didukung. Gunakan JPG, PNG, WEBP, GIF, atau PDF." };
+
+  const b64 = String(p.base64 || "");
+  if (!b64 || b64.length > 9500000) return { success: false, message: "File kosong atau terlalu besar. Maksimal 6 MB." };
+  const bytes = Utilities.base64Decode(b64);
+  if (bytes.length > 6 * 1024 * 1024) return { success: false, message: "Ukuran file maksimal 6 MB." };
+
+  const props = PropertiesService.getScriptProperties();
+  const folderKey = "EVENTNEV_CERTIFICATES_FOLDER_ID";
+  let folder = null;
+  const savedId = props.getProperty(folderKey);
+  if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
+  if (!folder) {
+    folder = DriveApp.createFolder("EventNev - Sertifikat Peserta");
+    props.setProperty(folderKey, folder.getId());
+  }
+
+  const cleanName = String(p.fileName || "sertifikat").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+  const file = folder.createFile(Utilities.newBlob(bytes, mime, cleanName));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const url = "https://drive.google.com/uc?export=download&id=" + file.getId();
+
+  const sheet = getSheet(SHEET.CERTIFICATES);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  const record = {
+    id: "CERT_" + Date.now(),
+    userId: userId,
+    namaEvent: eventName,
+    eventId: eventId,
+    tanggal: String(p.tanggal || new Date().toISOString().slice(0, 10)),
+    url: url
+  };
+  sheet.appendRow(headers.map(h => record[h] !== undefined ? record[h] : ""));
+  return { success: true, message: "Sertifikat berhasil diunggah dan diberikan kepada peserta.", certificate: record, fileId: file.getId() };
+}
+
 function adminGetAllApplications(p) {
   const sheet = getSheet(SHEET.APPLICATIONS);
   return sheetToObjects(sheet).filter(a => a.id);
