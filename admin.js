@@ -183,6 +183,19 @@ window.showEventForm = function(id = "") {
 };
 window.editEvent = id => window.showEventForm(id);
 
+window.deleteEvent = async function(id, name) {
+  if (!id) return toast("ID event tidak ditemukan.", "error");
+  if (!confirm('Hapus event "' + name + '"? Tindakan ini tidak dapat dibatalkan.')) return;
+  try {
+    const result = await apiFetch({ action: "deleteEvent", eventId: id });
+    if (!result || !result.success) throw new Error(result && result.message ? result.message : "Event gagal dihapus.");
+    toast("Event berhasil dihapus.", "success");
+    await renderEvents();
+  } catch (err) {
+    toast(err.message || "Gagal menghapus event.", "error");
+  }
+};
+
 function editorField(name,label,value,type="text",required=false) {
   return `<label class="admin-editor-label">${label}${required ? " *" : ""}
     <input name="${name}" type="${type}" value="${sanitize(value ?? "")}" ${required ? "required" : ""}>
