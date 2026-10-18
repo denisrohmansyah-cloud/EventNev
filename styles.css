@@ -743,12 +743,15 @@ p  { font-size: 1rem; line-height: 1.7; }
 .footer-main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 24px 56px;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 48px;
-  padding-bottom: 48px;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 64px;
+  align-items: start;
 }
+
+/* Kolom kiri: brand + jelajahi */
+.footer-left { display: flex; flex-direction: column; }
 .footer-brand { max-width: 280px; }
 .footer-brand .brand { margin-bottom: 16px; }
 .footer-brand > p { font-size: .85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
@@ -761,7 +764,7 @@ p  { font-size: 1rem; line-height: 1.7; }
   font-weight: 600;
   color: var(--text-dim);
 }
-.footer-column h3 { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.footer-column h3 { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
 .footer-column a {
   display: block;
   font-size: .82rem;
@@ -770,6 +773,84 @@ p  { font-size: 1rem; line-height: 1.7; }
   transition: color var(--transition);
 }
 .footer-column a:hover { color: var(--text); }
+
+/* === FIND US === */
+.footer-findus { }
+.findus-title {
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+  color: var(--text);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.findus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.findus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 20px;
+  background: var(--dark-2);
+  border: 1px solid var(--dark-4);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: border-color var(--transition), background var(--transition);
+  cursor: pointer;
+}
+.findus-card:hover { border-color: var(--subtle); background: var(--dark-3); }
+
+.findus-icon {
+  width: 32px; height: 32px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.findus-icon svg { width: 100%; height: 100%; }
+
+.findus-name {
+  font-size: .9rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .01em;
+}
+.findus-handle {
+  font-size: .8rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.findus-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-top: 8px;
+}
+.findus-arrow-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 14px; height: 14px;
+  align-items: center; justify-content: center;
+}
+.findus-arrow-black,
+.findus-arrow-red {
+  position: absolute;
+  font-style: normal;
+  font-size: .9rem;
+  transition: opacity var(--transition), transform var(--transition);
+  line-height: 1;
+}
+.findus-arrow-black { opacity: 1; transform: translate(0,0); }
+.findus-arrow-red   { opacity: 0; color: var(--red); transform: translate(-3px, 3px); }
+.findus-card:hover .findus-arrow-black { opacity: 0; transform: translate(3px,-3px); }
+.findus-card:hover .findus-arrow-red   { opacity: 1; transform: translate(0,0); }
+
 .footer-bottom {
   border-top: 1px solid var(--dark-4);
   padding: 20px 24px;
@@ -914,7 +995,8 @@ p  { font-size: 1rem; line-height: 1.7; }
   .hero-art { height: 300px; }
   .impact-inner { grid-template-columns: 1fr; gap: 48px; }
   .why-inner { grid-template-columns: 1fr; gap: 48px; }
-  .footer-main { grid-template-columns: 1fr 1fr; }
+  .footer-main { grid-template-columns: 1fr; gap: 40px; }
+  .footer-brand { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
@@ -924,7 +1006,8 @@ p  { font-size: 1rem; line-height: 1.7; }
   .section-head { flex-direction: column; align-items: flex-start; gap: 16px; }
   .event-grid { grid-template-columns: 1fr; }
   .benefit-grid { grid-template-columns: 1fr; }
-  .footer-main { grid-template-columns: 1fr; }
+  .footer-main { grid-template-columns: 1fr; gap: 32px; }
+  .findus-grid { grid-template-columns: 1fr 1fr; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   .hero { padding: 100px 20px 60px; }
   .impact-grid { grid-template-columns: 1fr 1fr; }
@@ -932,8 +1015,12 @@ p  { font-size: 1rem; line-height: 1.7; }
 }
 
 @media (max-width: 480px) {
+  .findus-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
   .impact-grid { grid-template-columns: 1fr 1fr; }
-  .hero-stats { gap: 24px; }
+  .hero-stats { gap: 0; }
   .newsletter-section { padding: 60px 20px; }
 }
 
