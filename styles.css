@@ -736,131 +736,130 @@ p  { font-size: 1rem; line-height: 1.7; }
 
 /* === FOOTER === */
 .site-footer {
-  background: var(--dark);
-  border-top: 1px solid var(--dark-4);
-  padding: 64px 0 0;
+  background: #000;
+  border-top: 0;
+  padding: 48px 0 0;
 }
 .footer-main {
-  max-width: 1680px;
+  max-width: 1840px;
   margin: 0 auto;
-  padding: 0 24px 56px;
+  padding: 0 5.6% 84px;
   display: grid;
-  grid-template-columns: 1.15fr .8fr 1.25fr;
-  gap: 56px;
+  grid-template-columns: minmax(300px, 1fr) minmax(520px, 1.15fr);
+  gap: clamp(48px, 9vw, 160px);
   align-items: start;
 }
-
-.footer-brand { max-width: 360px; }
-.footer-brand .brand { margin-bottom: 22px; }
-.footer-brand > p { font-size: 1rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 22px; }
-.footer-tags { display: flex; gap: 8px; flex-wrap: wrap; }
-.footer-tags span {
-  padding: 4px 10px;
-  border: 1px solid var(--dark-4);
-  border-radius: 100px;
-  font-size: .7rem;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-.footer-column h3 { font-size: .85rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
-.footer-column a {
-  display: block;
-  font-size: .82rem;
-  color: var(--text-dim);
-  margin-bottom: 10px;
-  transition: color var(--transition);
-}
-.footer-column a:hover { color: var(--text); }
-
-/* === FIND US === */
-.footer-findus { }
-.findus-title {
-  font-size: .75rem;
+.footer-brand { max-width: 430px; padding-top: 8px; }
+.footer-wordmark {
+  margin: 0 0 26px;
+  font-size: clamp(1.55rem, 2vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -.045em;
   font-weight: 800;
-  letter-spacing: .18em;
-  color: var(--text);
+  color: #88888d;
+  white-space: nowrap;
+}
+.footer-wordmark span { color: #ff1744; }
+.footer-brand > p {
+  max-width: 400px;
+  font-size: 1rem;
+  color: #a5a5ad;
+  line-height: 1.9;
+  margin: 0;
+}
+.footer-findus { min-width: 0; }
+.findus-title {
+  position: relative;
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: .28em;
+  color: #f5f5f5;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin: 0 0 42px;
+  padding-bottom: 18px;
+}
+.findus-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 2px;
+  background: #ff1744;
 }
 .findus-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .findus-card {
+  position: relative;
+  min-width: 0;
+  min-height: 84px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  background: var(--dark-2);
-  border: 1px solid var(--dark-4);
-  border-radius: var(--radius);
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  background: #070707;
+  border: 1px solid #1b1b1b;
+  border-radius: 0;
   text-decoration: none;
-  transition: border-color var(--transition), background var(--transition);
-  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
 }
-.findus-card:hover { border-color: var(--subtle); background: var(--dark-3); }
-
+.findus-card:hover {
+  border-color: #ff1744;
+  background: #0b0b0b;
+}
+.findus-card:first-child::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #ff1744;
+}
 .findus-icon {
-  width: 22px; height: 22px;
-  color: var(--muted);
-  margin-bottom: 2px;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  color: #8a8a8e;
+  margin: 0;
 }
+.findus-card:first-child .findus-icon { color: #ff1744; }
 .findus-icon svg { width: 100%; height: 100%; }
-
+.findus-copy { min-width: 0; }
 .findus-name {
   font-size: .9rem;
   font-weight: 800;
-  color: var(--text);
-  letter-spacing: .01em;
+  color: #f5f5f5;
+  letter-spacing: .08em;
+  margin-bottom: 6px;
 }
+.findus-card:first-child .findus-name { color: #ff1744; }
 .findus-handle {
   font-size: .8rem;
-  color: var(--text-dim);
-  margin-top: 2px;
+  line-height: 1.4;
+  color: #696970;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
-.findus-link {
-  display: none;
-  align-items: center;
-  align-items: center;
-  gap: 6px;
-  font-size: .8rem;
-  font-weight: 600;
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  margin-top: 8px;
-}
-.findus-arrow-wrap {
-  position: relative;
-  display: inline-flex;
-  width: 14px; height: 14px;
-  align-items: center; justify-content: center;
-}
-.findus-arrow-black,
-.findus-arrow-red {
-  position: absolute;
-  font-style: normal;
-  font-size: .9rem;
-  transition: opacity var(--transition), transform var(--transition);
-  line-height: 1;
-}
-.findus-arrow-black { opacity: 1; transform: translate(0,0); }
-.findus-arrow-red   { opacity: 0; color: var(--red); transform: translate(-3px, 3px); }
-.findus-card:hover .findus-arrow-black { opacity: 0; transform: translate(3px,-3px); }
-.findus-card:hover .findus-arrow-red   { opacity: 1; transform: translate(0,0); }
-
+.findus-link { display: none; }
 .footer-bottom {
-  border-top: 1px solid var(--dark-4);
-  padding: 20px 24px;
-  max-width: 1200px;
+  border-top: 1px solid #1b1b1b;
+  padding: 40px 5.6% 32px;
+  max-width: 1840px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: .78rem;
-  color: var(--text-dim);
+  gap: 20px;
+  font-size: .9rem;
+  letter-spacing: .08em;
+  color: #9b9ba3;
 }
+.footer-nev { color: #ff1744; }
+.footer-motto { display: inline-flex; align-items: center; gap: 10px; }
+.footer-motto span { color: #ff1744; font-size: .65rem; }
 
 /* === MODAL === */
 .modal-backdrop {
@@ -994,7 +993,7 @@ p  { font-size: 1rem; line-height: 1.7; }
   .hero-art { height: 300px; }
   .impact-inner { grid-template-columns: 1fr; gap: 48px; }
   .why-inner { grid-template-columns: 1fr; gap: 48px; }
-  .footer-main { grid-template-columns: 1fr; gap: 40px; }
+  .footer-main { grid-template-columns: 1fr; gap: 44px; padding-bottom: 56px; }
   .footer-brand { max-width: 100%; }
 }
 
@@ -1005,9 +1004,10 @@ p  { font-size: 1rem; line-height: 1.7; }
   .section-head { flex-direction: column; align-items: flex-start; gap: 16px; }
   .event-grid { grid-template-columns: 1fr; }
   .benefit-grid { grid-template-columns: 1fr; }
-  .footer-main { grid-template-columns: 1fr; gap: 32px; }
+  .footer-main { grid-template-columns: 1fr; gap: 36px; padding-left: 22px; padding-right: 22px; }
   .findus-grid { grid-template-columns: 1fr 1fr; }
-  .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  .findus-card { gap: 12px; padding: 14px 12px; }
+  .footer-bottom { flex-direction: column; gap: 12px; text-align: center; padding: 26px 22px; }
   .hero { padding: 100px 20px 60px; }
   .impact-grid { grid-template-columns: 1fr 1fr; }
   .why-inner { gap: 40px; }
@@ -1015,6 +1015,9 @@ p  { font-size: 1rem; line-height: 1.7; }
 
 @media (max-width: 480px) {
   .findus-grid { grid-template-columns: 1fr; }
+  .footer-wordmark { font-size: 1.5rem; }
+  .footer-brand > p { font-size: .9rem; }
+  .footer-bottom { font-size: .78rem; letter-spacing: .03em; }
 }
 
 @media (max-width: 480px) {
