@@ -48,20 +48,6 @@
       <a class="btn btn-red" href="#kegiatan">Jelajahi kegiatan <span>↗</span></a>
       <a class="btn btn-outline" href="login.html">Buat akun gratis</a>
     </div>
-    <div class="hero-stats">
-      <div>
-        <b id="liveEventCount">0</b>
-        <small>Kegiatan tersedia</small>
-      </div>
-      <div>
-        <b id="alumniCount">—</b>
-        <small>Jumlah Alumni</small>
-      </div>
-      <div>
-        <b id="pesertaCount">—</b>
-        <small>Jumlah Peserta</small>
-      </div>
-    </div>
   </div>
 
   <div class="hero-art" aria-hidden="true">
@@ -106,18 +92,18 @@
       <h3>Network Evolution <span class="red">— Ora Konek Ora Kepenak</span></h3>
       <p class="muted" style="margin-top: 12px; line-height: 1.7;">Satu portal untuk menemukan program, membuat akun peserta, dan mendaftar kegiatan secara terpisah.</p>
     </div>
-    <div class="impact-grid">
-      <div>
-        <b id="impactEvents">0</b>
+    <div class="impact-grid" id="impactStats">
+      <div class="impact-stat">
+        <b id="impactEvents" data-count-target="0">0</b>
         <span>Kegiatan tersedia</span>
       </div>
-      <div>
-        <b id="impactAlumniCount">—</b>
+      <div class="impact-stat">
+        <b id="impactAlumniCount" data-count-target="">—</b>
         <span>Jumlah Alumni</span>
       </div>
-      <div>
-        <b>1</b>
-        <span>Portal kegiatan</span>
+      <div class="impact-stat">
+        <b id="impactPesertaCount" data-count-target="">—</b>
+        <span>Jumlah Peserta</span>
       </div>
       <div>
         <b>Open Lab</b>
