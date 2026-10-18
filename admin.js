@@ -158,7 +158,7 @@ window.showEventForm = function(id = "") {
       ${editorField("kuota","Kuota peserta",ev.kuota,"number")}
       ${editorField("biaya","Biaya",ev.biaya)}
       ${editorField("status","Status (Buka/Tutup)",ev.status || "Buka")}
-      ${editorField("gambar","URL gambar",ev.gambar,"url")}
+      <label class="admin-editor-label">Foto event<input name="gambarFile" type="file" accept="image/*"><small>Format gambar, maksimal 5 MB.</small><input type="hidden" name="gambar" value="${sanitize(ev.gambar || "")}"></label>
     </div>
     <label class="admin-editor-label">Deskripsi<textarea name="deskripsi" rows="3">${sanitize(ev.deskripsi || "")}</textarea></label>
     <label class="admin-editor-label">Syarat<textarea name="syarat" rows="2">${sanitize(ev.syarat || "")}</textarea></label>
@@ -167,8 +167,12 @@ window.showEventForm = function(id = "") {
   </form>`;
   document.getElementById("eventEditor").addEventListener("submit", async e => {
     e.preventDefault();
-    const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const form = e.currentTarget;
+    const payload = Object.fromEntries(new FormData(form).entries());
     try {
+      const file = form.elements.gambarFile.files[0];
+      if (file) { if (!file.type.startsWith("image/")) throw new Error("Pilih file gambar."); if (file.size > 5*1024*1024) throw new Error("Ukuran gambar maksimal 5 MB."); payload.gambar = await uploadAdminImage(file, "event"); }
+      delete payload.gambarFile;
       const result = await apiFetch({ action: payload.id ? "updateEvent" : "addEvent", ...payload });
       if (!result.success) throw new Error(result.message || "Gagal menyimpan event.");
       toast("Event berhasil disimpan.", "success"); renderEvents();
@@ -341,7 +345,7 @@ window.showTrainerForm = function(id = "") {
       ${editorField("nama","Nama trainer",t.nama,"text",true)}
       ${editorField("jabatan","Jabatan",t.jabatan,"text",true)}
       ${editorField("keahlian","Keahlian",t.keahlian,"text",true)}
-      ${editorField("foto","URL foto",t.foto,"url")}
+      <label class="admin-editor-label">Foto trainer<input name="fotoFile" type="file" accept="image/*"><small>Format gambar, maksimal 5 MB.</small><input type="hidden" name="foto" value="${sanitize(t.foto || "")}"></label>
       ${editorField("urutan","Urutan tampil",t.urutan || "1","number")}
     </div>
     <label class="admin-editor-label">Bio<textarea name="bio" rows="3">${sanitize(t.bio || "")}</textarea></label>
@@ -349,8 +353,12 @@ window.showTrainerForm = function(id = "") {
   </form>`;
   document.getElementById("trainerEditor").addEventListener("submit", async e => {
     e.preventDefault();
-    const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const form = e.currentTarget;
+    const payload = Object.fromEntries(new FormData(form).entries());
     try {
+      const file = form.elements.fotoFile.files[0];
+      if (file) { if (!file.type.startsWith("image/")) throw new Error("Pilih file gambar."); if (file.size > 5*1024*1024) throw new Error("Ukuran gambar maksimal 5 MB."); payload.foto = await uploadAdminImage(file, "trainer"); }
+      delete payload.fotoFile;
       const result = await apiFetch({ action: payload.id ? "updateTrainer" : "addTrainer", ...payload });
       if (!result.success) throw new Error(result.message || "Gagal menyimpan trainer.");
       toast("Trainer berhasil disimpan.", "success"); renderTrainers();
@@ -358,6 +366,13 @@ window.showTrainerForm = function(id = "") {
   });
 };
 window.editTrainer = id => window.showTrainerForm(id);
+
+async function uploadAdminImage(file, kind) {
+  const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Gagal membaca gambar.")); reader.readAsDataURL(file); });
+  const result = await apiFetch({ action: "uploadAdminImage", kind, fileName: file.name, mimeType: file.type, base64: String(dataUrl).split(",")[1] });
+  if (!result || !result.success || !result.url) throw new Error(result?.message || "Backend uploadAdminImage belum tersedia di Apps Script.");
+  return result.url;
+}
 
 function getSpreadsheetId() { return "1seqC8RhKYpAZ4FQRjhkz3E7KL76ZfyW9mbzkEsseUFY"; }
 
