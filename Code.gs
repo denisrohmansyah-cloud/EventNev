@@ -252,11 +252,11 @@ function doPost(e) {
       const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
       return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:"Foto berhasil diunggah."});
     }
-    const adminActions = ["getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
+    const adminActions = ["getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","getAuditLog","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
     const participantActions = ["updateProfile","daftar","getMyApplications","cancelApplication","getMyCertificates"];
     if (adminActions.indexOf(action) >= 0) { const auth = requireEventNevAdmin_(p); if (!auth.success) return jsonResponse(auth); p.adminEmail = auth.user.email; }
     if (participantActions.indexOf(action) >= 0) { const auth = requireEventNevParticipant_(p); if (!auth.success) return jsonResponse(auth); p.userId = auth.user.id; p.email = auth.user.email; }
-    if (action === "absen") { const auth = requireEventNevAdmin_(p); if (!auth.success) return jsonResponse(auth); p.scannerUid = auth.user.id; }
+    if (action === "absen") { const auth = requireEventNevAdmin_(p); if (!auth.success) return jsonResponse(auth); p.scannerUid = auth.user.id; p.adminEmail = auth.user.email; }
     let result;
     switch (action) {
       case "updateProfile": result = handleUpdateProfile(p); break;
@@ -267,13 +267,14 @@ function doPost(e) {
       case "getMyApplications": result = handleGetMyApplications(p); break;
       case "cancelApplication": result = handleCancelApplication(p); break;
       case "getMyCertificates": result = handleGetMyCertificates(p); break;
-      case "absen": result = handleAbsen(p); break;
+      case "absen": result = handleAbsen(p); if (result && result.success) eventNevAuditLog_(p.adminEmail, "attendance", p.eventId || "", "Presensi dicatat untuk peserta " + String(p.targetUid || "")); break;
       case "getAllApplications": result = adminGetAllApplications(p); break;
       case "getCertificates": result = adminGetCertificates_(p); break;
       case "getUsers": result = adminGetUsers(p); break;
       case "updateStatus": result = adminUpdateStatus(p); break;
       case "deleteApp": result = adminDeleteApp(p); break;
       case "getStats": result = adminGetStats(p); break;
+      case "getAuditLog": result = adminGetAuditLog_(p); break;
       case "addEvent": result = adminSaveRecord_("Events", p, "event"); break;
       case "updateEvent": result = adminSaveRecord_("Events", p, "event"); break;
       case "deleteEvent": result = adminDeleteEvent_(p); break;
@@ -503,6 +504,23 @@ function handleDaftar(p) {
   const events = sheetToObjects(evSheet);
   const ev = events.find(e => String(e.id) === String(eventId) || String(e.nama) === String(eventId));
   if (!ev) return { success: false, message: "Kegiatan tidak ditemukan atau sudah tidak tersedia." };
+  const eventStatus = String(ev.status || "").trim().toLowerCase();
+  if (["tutup","ditutup","closed","close","nonaktif","tidak aktif","draft","penuh"].indexOf(eventStatus) >= 0) {
+    return { success: false, message: "Pendaftaran kegiatan ini sudah ditutup." };
+  }
+  const deadline = String(ev.batasPendaftaran || ev.tanggalTutup || "").trim();
+  if (deadline && /^\d{4}-\d{2}-\d{2}/.test(deadline)) {
+    const today = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyy-MM-dd");
+    if (today > deadline.slice(0, 10)) return { success: false, message: "Masa pendaftaran kegiatan ini sudah berakhir." };
+  }
+  const capacity = Number(ev.kuota || 0);
+  if (Number.isFinite(capacity) && capacity > 0) {
+    const occupied = apps.filter(a => String(a.eventId) === String(ev.id) &&
+      !["cancelled","dibatalkan","rejected","ditolak"].includes(String(a.status || "pending").trim().toLowerCase())).length;
+    const existingStatus = String(existing && existing.status || "").trim().toLowerCase();
+    const alreadyCounted = existing && !["cancelled","dibatalkan","rejected","ditolak"].includes(existingStatus);
+    if (!alreadyCounted && occupied >= capacity) return { success: false, message: "Kuota kegiatan sudah penuh." };
+  }
   if (String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
   }
@@ -792,6 +810,7 @@ function adminUpdateStatus(p) {
       sheet.getRange(i + 1, statusIdx + 1).setValue(status);
       if (catatanIdx >= 0) sheet.getRange(i + 1, catatanIdx + 1).setValue(catatan);
       SpreadsheetApp.flush();
+      eventNevAuditLog_(p.adminEmail, "application_status", appId, "Status: " + current + " -> " + status);
       return { success: true, message: "Status pendaftaran diperbarui." };
     }
     return { success: false, message: "Pendaftaran tidak ditemukan." };
@@ -827,12 +846,46 @@ function adminDeleteApp(p) {
       }
       sheet.deleteRow(i + 1);
       SpreadsheetApp.flush();
+      eventNevAuditLog_(p.adminEmail, "application_deleted", appId, "eventId=" + eventId + "; userId=" + userId);
       return { success: true, message: "Pendaftaran berhasil dihapus." };
     }
     return { success: false, message: "Data tidak ditemukan." };
   } finally {
     lock.releaseLock();
   }
+}
+
+
+/* =========================================================
+   AUDIT LOG — aktivitas admin yang berdampak pada data
+   ========================================================= */
+function eventNevAuditLog_(actor, action, target, details) {
+  try {
+    const ss = getDatabaseSpreadsheet_();
+    let sheet = ss.getSheetByName("AuditLog");
+    if (!sheet) sheet = ss.insertSheet("AuditLog");
+    if (sheet.getLastRow() === 0) sheet.appendRow(["timestamp", "actor", "action", "target", "details"]);
+    sheet.appendRow([
+      new Date(),
+      String(actor || "system").slice(0, 200),
+      String(action || "").slice(0, 80),
+      String(target || "").slice(0, 200),
+      String(details || "").slice(0, 1000)
+    ]);
+    const last = sheet.getLastRow();
+    if (last > 1001) sheet.deleteRows(2, last - 1001);
+  } catch (err) {
+    Logger.log("Audit log gagal ditulis: " + err.message);
+  }
+}
+
+function adminGetAuditLog_() {
+  const ss = getDatabaseSpreadsheet_();
+  const sheet = ss.getSheetByName("AuditLog");
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  return sheetToObjects(sheet).sort(function(a, b) {
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  }).slice(0, 100);
 }
 
 function adminGetStats() {
@@ -874,7 +927,7 @@ function adminDeleteTrainer_(p) {
   const idIndex = headers.indexOf("id");
   if (idIndex < 0) return { success: false, message: "Kolom id tidak ditemukan pada sheet Trainers." };
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idIndex]) === trainerId) { sheet.deleteRow(i + 1); return { success: true, message: "Trainer berhasil dihapus." }; }
+    if (String(data[i][idIndex]) === trainerId) { sheet.deleteRow(i + 1); eventNevAuditLog_(email, "trainer_deleted", trainerId, "Trainer dihapus."); return { success: true, message: "Trainer berhasil dihapus." }; }
   }
   return { success: false, message: "Trainer tidak ditemukan." };
 }
@@ -901,6 +954,7 @@ function adminDeleteEvent_(p) {
       return { success: false, message: "Event memiliki riwayat pendaftaran atau sertifikat. Nonaktifkan event melalui status agar riwayat tetap terjaga." };
     }
     sheet.deleteRow(i + 1);
+    eventNevAuditLog_(email, "event_deleted", eventId, "Event dihapus setelah pemeriksaan riwayat.");
     return { success: true, message: 'Event berhasil dihapus.' };
   }
   return { success: false, message: 'Event tidak ditemukan.' };
@@ -960,7 +1014,8 @@ function adminSaveRecord_(sheetName, p, type) {
   if (isEvent && !record.status) record.status = "Buka";
   if (!isEvent && !record.urutan) record.urutan = 1;
 
-  if (rowNumber < 0) {
+  const wasNew = rowNumber < 0;
+  if (wasNew) {
     const newRow = headers.map(h => h === "createdAt" ? new Date().toISOString() : (record[h] !== undefined ? record[h] : ""));
     sheet.appendRow(newRow);
   } else {
@@ -968,5 +1023,6 @@ function adminSaveRecord_(sheetName, p, type) {
       if (record[h] !== undefined) sheet.getRange(rowNumber, index + 1).setValue(record[h]);
     });
   }
+  eventNevAuditLog_(email, type + (wasNew ? "_created" : "_updated"), record.id, String(record.nama || ""));
   return { success: true, id: record.id, message: "Data berhasil disimpan." };
 }
