@@ -375,9 +375,10 @@ function renderCertificates() {
             ${state.certificates.map(c => `
               <div style="background:var(--dark-2);border:1px solid var(--dark-4);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:8px;">
                 <div style="font-size:2rem;">🏆</div>
-                <div style="font-weight:700;font-size:.95rem;">${sanitize(c.namaEvent || c.nama)}</div>
-                <div style="font-size:.78rem;color:var(--text-dim);">${formatDate(c.tanggal)}</div>
-                ${c.url ? `<a href="${sanitize(c.url)}" target="_blank" class="btn btn-outline" style="font-size:.78rem;padding:8px 12px;margin-top:4px;">Unduh ↗</a>` : ""}
+                <div style="font-weight:700;font-size:.95rem;">${sanitize(c.namaEvent || c.nama || "Sertifikat Kegiatan")}</div>
+                <div style="font-size:.78rem;color:var(--text-dim);">Tanggal terbit: ${formatDate(c.tanggal)}</div>
+                <div style="font-size:.72rem;color:var(--text-dim);word-break:break-word;">Nomor sertifikat: ${sanitize(c.id || "—")}</div>
+                ${c.url ? `<a href="${sanitize(c.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:.82rem;padding:10px 14px;margin-top:6px;text-align:center;">⬇ Unduh Sertifikat</a>` : '<span style="font-size:.8rem;color:var(--text-dim);">File sertifikat belum tersedia.</span>'}
               </div>
             `).join("")}
            </div>`
