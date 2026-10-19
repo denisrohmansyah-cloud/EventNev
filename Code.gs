@@ -574,6 +574,20 @@ function adminUploadCertificate_(p) {
   const users = sheetToObjects(getSheet(SHEET.USERS));
   const user = users.find(u => String(u.id || "") === userId);
   if (!user) return { success: false, message: "Peserta tidak ditemukan. Muat ulang daftar peserta." };
+  if (!eventId) return { success: false, message: "Pilih kegiatan terkait sertifikat." };
+
+  const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  const attended = applications.some(a =>
+    String(a.userId || "") === userId &&
+    String(a.eventId || "") === eventId &&
+    String(a.status || "").trim().toLowerCase() === "hadir"
+  );
+  if (!attended) return { success: false, message: "Sertifikat hanya dapat diberikan kepada peserta yang tercatat Hadir pada kegiatan tersebut." };
+
+  const existingCertificate = sheetToObjects(getSheet(SHEET.CERTIFICATES)).some(c =>
+    String(c.userId || "") === userId && String(c.eventId || "") === eventId
+  );
+  if (existingCertificate) return { success: false, message: "Peserta ini sudah memiliki sertifikat untuk kegiatan tersebut." };
 
   const mime = String(p.mimeType || "").toLowerCase();
   const allowedMime = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
