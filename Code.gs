@@ -490,7 +490,8 @@ function handleDaftar(p) {
   const evSheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(evSheet);
   const ev = events.find(e => String(e.id) === String(eventId) || String(e.nama) === String(eventId));
-  if (ev && String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
+  if (!ev) return { success: false, message: "Kegiatan tidak ditemukan atau sudah tidak tersedia." };
+  if (String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
   }
   if (existing && ["cancelled", "dibatalkan"].includes(String(existing.status || "").trim().toLowerCase())) {
