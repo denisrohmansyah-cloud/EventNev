@@ -557,39 +557,49 @@ function handleGetMyCertificates(p) {
    ABSENSI
    ========================================================= */
 function handleAbsen(p) {
-  const { scannerUid, targetUid } = p;
-  if (!scannerUid || !targetUid) return { success: false, message: "Data tidak lengkap." };
+  const targetUid = String(p.targetUid || "").trim();
+  const eventId = String(p.eventId || "").trim();
+  if (!targetUid || !eventId) return { success: false, message: "Pilih kegiatan dan pastikan QR peserta valid." };
 
-  // Cari user target
-  const userSheet = getSheet(SHEET.USERS);
-  const users = sheetToObjects(userSheet);
-  const target = users.find(u => u.id === targetUid || u.email === targetUid);
-  if (!target) return { success: false, message: "QR tidak valid." };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses presensi lain. Coba kembali." };
+  try {
+    const users = sheetToObjects(getSheet(SHEET.USERS));
+    const target = users.find(u => String(u.id || "") === targetUid || String(u.email || "").toLowerCase() === targetUid.toLowerCase());
+    if (!target) return { success: false, message: "QR peserta tidak valid." };
 
-  // Update application status jadi "hadir"
-  const appSheet = getSheet(SHEET.APPLICATIONS);
-  const data = appSheet.getDataRange().getValues();
-  const headers = data[0];
-  const userIdIdx = headers.indexOf("userId");
-  const statusIdx = headers.indexOf("status");
-  let updated = false;
+    const event = sheetToObjects(getSheet(SHEET.EVENTS)).find(e => String(e.id || "") === eventId);
+    if (!event) return { success: false, message: "Kegiatan tidak ditemukan. Muat ulang daftar kegiatan." };
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][userIdIdx]) === String(target.id || target.email)) {
-      if (/approved|disetujui/i.test(data[i][statusIdx])) {
-        appSheet.getRange(i + 1, statusIdx + 1).setValue("hadir");
-        updated = true;
+    const appSheet = getSheet(SHEET.APPLICATIONS);
+    const data = appSheet.getDataRange().getValues();
+    if (data.length < 2) return { success: false, message: "Belum ada pendaftaran untuk kegiatan ini." };
+    const headers = data[0].map(h => String(h).trim());
+    const userIdIdx = headers.indexOf("userId");
+    const eventIdIdx = headers.indexOf("eventId");
+    const statusIdx = headers.indexOf("status");
+    if (userIdIdx < 0 || eventIdIdx < 0 || statusIdx < 0) throw new Error("Kolom Applications tidak lengkap.");
+
+    for (let i = 1; i < data.length; i++) {
+      const sameUser = String(data[i][userIdIdx] || "") === String(target.id || target.email);
+      const sameEvent = String(data[i][eventIdIdx] || "") === eventId;
+      if (!sameUser || !sameEvent) continue;
+
+      const status = String(data[i][statusIdx] || "").trim().toLowerCase();
+      if (status === "hadir") return { success: false, message: "Presensi peserta ini sudah tercatat untuk kegiatan tersebut." };
+      if (!/^(approved|disetujui)$/i.test(status)) {
+        return { success: false, message: "Peserta belum disetujui untuk kegiatan ini." };
       }
-    }
-  }
 
-  if (updated) {
-    return { success: true, nama: target.nama, message: "Absensi berhasil dicatat." };
-  } else {
-    return { success: false, message: "Tidak ada kegiatan yang disetujui untuk peserta ini." };
+      appSheet.getRange(i + 1, statusIdx + 1).setValue("hadir");
+      SpreadsheetApp.flush();
+      return { success: true, nama: target.nama, namaEvent: event.nama, message: "Presensi berhasil dicatat." };
+    }
+    return { success: false, message: "Peserta tidak terdaftar pada kegiatan yang dipilih." };
+  } finally {
+    lock.releaseLock();
   }
 }
-
 /* =========================================================
    ADMIN
    ========================================================= */
