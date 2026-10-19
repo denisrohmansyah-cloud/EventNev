@@ -111,6 +111,7 @@ function renderView() {
     case "stats":        renderStats(); break;
     case "events":       renderEvents(); break;
     case "applications": renderApplications(); break;
+    case "attendance":   renderAttendance(); break;
     case "users":        renderUsers(); break;
     case "trainers":     renderTrainers(); break;
     case "certificates": renderCertificates(); break;
@@ -311,7 +312,6 @@ function renderApplicationsTable() {
           <option value="pending" ${app.status === "pending" ? "selected" : ""}>Menunggu</option>
           <option value="approved" ${app.status === "approved" ? "selected" : ""}>Setujui</option>
           <option value="rejected" ${app.status === "rejected" ? "selected" : ""}>Tolak</option>
-          <option value="hadir" ${app.status === "hadir" ? "selected" : ""}>Hadir</option>
         </select>
       </td>
       <td class="admin-app-actions">
@@ -359,7 +359,13 @@ window.viewApplicantDetails = function(appId) {
         ${field("Nama lengkap", app.namaPeserta || app.nama)}
         ${field("Email", app.emailPeserta)}
         ${field("Nomor WhatsApp", app.noHpPeserta)}
+        ${field("NIM / NIS", app.nimPeserta)}
+        ${field("Asal universitas / sekolah", app.universitasPeserta)}
+        ${field("Fakultas", app.fakultasPeserta)}
+        ${field("Program studi / jurusan", app.prodiPeserta)}
+        ${field("Angkatan", app.angkatanPeserta)}
         ${field("Jenis akun", app.jenisPeserta)}
+        ${field("Alamat", app.alamatPeserta)}
         ${field("Kegiatan", app.namaEvent || app.eventId)}
         ${field("Tanggal daftar", formatDate(app.tanggalDaftar))}
         ${field("Status pendaftaran", ({pending:"Menunggu",approved:"Disetujui",rejected:"Ditolak",hadir:"Hadir"})[String(app.status || "").toLowerCase()] || app.status)}
@@ -413,6 +419,38 @@ window.deleteApp = async function(appId) {
 };
 
 /* --- USERS --- */
+/* --- ATTENDANCE --- */
+async function renderAttendance() {
+  setContent('<div class="db-loading">Memuat daftar kehadiran…</div>');
+  try {
+    const data = await apiFetch({ action: "getAllApplications" });
+    adminState.applications = Array.isArray(data) ? data : [];
+    const rows = adminState.applications
+      .filter(app => ["approved", "hadir"].includes(String(app.status || "").toLowerCase()))
+      .map(app => `
+        <tr>
+          <td>${sanitize(app.namaEvent || app.eventId || "—")}</td>
+          <td><strong>${sanitize(app.namaPeserta || "Nama belum tersedia")}</strong><div class="admin-app-subtext">${sanitize(app.emailPeserta || "Email belum tersedia")}</div></td>
+          <td>${formatDate(app.tanggalDaftar)}</td>
+          <td><span class="event-badge ${String(app.status).toLowerCase()==="hadir"?"badge-success":"badge-openlab"}">${String(app.status).toLowerCase()==="hadir"?"Hadir":"Belum hadir"}</span></td>
+          <td><button class="btn ${String(app.status).toLowerCase()==="hadir"?"btn-outline":"btn-primary"} admin-btn-sm" onclick="setAttendanceStatus('${sanitize(String(app.id))}','${String(app.status).toLowerCase()==="hadir"?"approved":"hadir"}')">${String(app.status).toLowerCase()==="hadir"?"Batalkan hadir":"Tandai hadir"}</button>
+          <button class="btn btn-outline admin-btn-sm" onclick="viewApplicantDetails('${sanitize(String(app.id))}')">Data diri</button></td>
+        </tr>`).join("") || `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px;">Belum ada peserta yang disetujui untuk dicatat kehadirannya.</td></tr>`;
+    setContent(`<div><div class="db-section-title">Manajemen Kehadiran (${adminState.applications.filter(a=>["approved","hadir"].includes(String(a.status||"").toLowerCase())).length})</div><p class="admin-app-help">Pencatatan kehadiran dipisahkan dari keputusan pendaftaran. Hanya peserta yang sudah disetujui yang muncul di sini.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Event</th><th>Nama Peserta</th><th>Tgl Daftar</th><th>Kehadiran</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
+  } catch (err) {
+    setContent('<div class="db-loading">Gagal memuat kehadiran. Periksa koneksi backend.</div>');
+  }
+}
+window.setAttendanceStatus = async function(appId, status) {
+  if (!confirm(status === "hadir" ? "Tandai peserta ini hadir?" : "Batalkan status hadir peserta ini?")) return;
+  try {
+    const result = await apiFetch({action:"updateStatus",appId,status});
+    if (!result || !result.success) { toast(result?.message || "Status kehadiran gagal diperbarui.","error"); return; }
+    toast(status === "hadir" ? "Kehadiran dicatat." : "Status hadir dibatalkan.","success");
+    await renderAttendance();
+  } catch { toast("Gagal terhubung ke server.","error"); }
+};
+
 async function renderUsers() {
   setContent('<div class="db-loading">Memuat data peserta…</div>');
   try {
