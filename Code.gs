@@ -643,6 +643,10 @@ function adminUploadCertificate_(p) {
   const email = String(p.adminEmail || "").trim().toLowerCase();
   if (!isEventNevAdmin_(email)) return { success: false, message: "Akses upload hanya untuk admin." };
 
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses sertifikat lain. Coba kembali." };
+  try {
+
   const userId = String(p.userId || "").trim();
   const eventId = String(p.eventId || "").trim();
   const eventName = String(p.namaEvent || "").trim();
@@ -702,6 +706,9 @@ function adminUploadCertificate_(p) {
   };
   sheet.appendRow(headers.map(h => record[h] !== undefined ? record[h] : ""));
   return { success: true, message: "Sertifikat berhasil diunggah dan diberikan kepada peserta.", certificate: record, fileId: file.getId() };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function adminGetAllApplications(p) {
