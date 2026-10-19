@@ -327,11 +327,32 @@ async function fetchDashboardEvents() {
 
 /* --- APPLICATIONS --- */
 function renderApplications() {
+  const hasApplications = state.applications.length > 0;
   setContent(`
     <div>
-      <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:24px;">Pendaftaran Saya</h2>
+      <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:12px;">Pendaftaran Saya</h2>
+      ${hasApplications ? `
+        <div class="db-app-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+          <label style="flex:1;min-width:190px;">
+            <span style="display:block;font-size:.78rem;color:var(--text-dim);margin-bottom:5px;">Cari kegiatan</span>
+            <input id="myApplicationSearch" type="search" placeholder="Cari nama atau kategori…" oninput="filterMyApplications()" autocomplete="off" style="width:100%;box-sizing:border-box;">
+          </label>
+          <label style="min-width:170px;">
+            <span style="display:block;font-size:.78rem;color:var(--text-dim);margin-bottom:5px;">Status</span>
+            <select id="myApplicationStatus" onchange="filterMyApplications()" style="width:100%;">
+              <option value="all">Semua status</option>
+              <option value="pending">Menunggu</option>
+              <option value="approved">Disetujui</option>
+              <option value="hadir">Hadir</option>
+              <option value="rejected">Ditolak</option>
+              <option value="cancelled">Dibatalkan</option>
+            </select>
+          </label>
+        </div>
+        <p id="myApplicationCount" style="font-size:.8rem;color:var(--text-dim);margin:0 0 12px;">Menampilkan ${state.applications.length} pendaftaran</p>
+      ` : ""}
       <div class="db-app-list" id="appList">
-        ${state.applications.length
+        ${hasApplications
           ? state.applications.map(buildAppCard).join("")
           : `<div style="text-align:center;padding:48px 24px;color:var(--text-dim);">
               <div style="font-size:2rem;margin-bottom:12px;">📭</div>
@@ -342,6 +363,32 @@ function renderApplications() {
       </div>
     </div>
   `);
+}
+
+function filterMyApplications() {
+  const search = String(document.getElementById("myApplicationSearch")?.value || "").trim().toLowerCase();
+  const selected = String(document.getElementById("myApplicationStatus")?.value || "all").toLowerCase();
+  const cards = Array.from(document.querySelectorAll("#appList .db-app-card"));
+  let visible = 0;
+  cards.forEach(card => {
+    const text = String(card.dataset.search || "");
+    const status = String(card.dataset.status || "pending");
+    const match = (!search || text.includes(search)) && (selected === "all" || status === selected);
+    card.hidden = !match;
+    if (match) visible++;
+  });
+  const count = document.getElementById("myApplicationCount");
+  if (count) count.textContent = "Menampilkan " + visible + " dari " + cards.length + " pendaftaran";
+  let empty = document.getElementById("myApplicationNoResults");
+  if (!visible && cards.length) {
+    if (!empty) {
+      empty = document.createElement("div");
+      empty.id = "myApplicationNoResults";
+      empty.style.cssText = "text-align:center;padding:28px 16px;color:var(--text-dim)";
+      empty.textContent = "Tidak ada pendaftaran yang cocok dengan pencarian atau filter.";
+      document.getElementById("appList")?.appendChild(empty);
+    }
+  } else if (empty) empty.remove();
 }
 
 function buildAppCard(app) {
@@ -356,7 +403,9 @@ function buildAppCard(app) {
   const s = String(app.status || "pending").toLowerCase();
   const info = statusMap[s] || { text: sanitize(app.status || "—"), cls: "badge-openlab" };
   const canCancel = ["pending", "menunggu"].includes(s) && app.id;
-  return '<div class="db-app-card"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
+  const searchable = String((app.namaEvent || "") + " " + (app.eventId || "") + " " + (app.kategori || "")).toLowerCase();
+  const filterStatus = ["menunggu", ""].includes(s) ? "pending" : (["disetujui"].includes(s) ? "approved" : (["dibatalkan"].includes(s) ? "cancelled" : s));
+  return '<div class="db-app-card" data-search="' + sanitize(searchable) + '" data-status="' + sanitize(filterStatus) + '"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
     (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\'' + sanitize(app.id) + '\')">Batalkan pendaftaran</button>' : "") +
     '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div></div>';
 }
