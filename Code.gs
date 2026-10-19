@@ -477,6 +477,9 @@ function handleAlumniCount() {
 function handleDaftar(p) {
   const { userId, eventId, nama, email, requirementFileId, requirementFileName } = p;
   if (!userId || !eventId) return { success: false, message: "Data tidak lengkap." };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses pendaftaran lain. Coba kembali." };
+  try {
   const sheet = getSheet(SHEET.APPLICATIONS);
   const apps = sheetToObjects(sheet);
   const existing = apps.find(a => String(a.userId) === String(userId) && String(a.eventId) === String(eventId));
@@ -714,24 +717,36 @@ function adminGetUsers(p) {
 }
 
 function adminUpdateStatus(p) {
-  const { appId, status, catatan } = p;
+  const appId = String(p.appId || "").trim();
+  const status = String(p.status || "").trim().toLowerCase();
+  const catatan = String(p.catatan || "").trim().slice(0, 2000);
+  const allowedStatuses = ["pending", "menunggu", "approved", "rejected"];
   if (!appId || !status) return { success: false, message: "Data tidak lengkap." };
+  if (allowedStatuses.indexOf(status) < 0) return { success: false, message: "Status pendaftaran tidak valid." };
 
   const sheet = getSheet(SHEET.APPLICATIONS);
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const idIdx = headers.indexOf("id");
-  const statusIdx = headers.indexOf("status");
-  const catatanIdx = headers.indexOf("catatan");
+  if (!data.length) return { success: false, message: "Pendaftaran tidak ditemukan." };
+  const headers = data[0].map(h => String(h).trim());
+  const idIdx = headers.indexOf("id"), statusIdx = headers.indexOf("status"), catatanIdx = headers.indexOf("catatan");
+  if (idIdx < 0 || statusIdx < 0) return { success: false, message: "Kolom pendaftaran tidak lengkap." };
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idIdx]) === String(appId)) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses perubahan lain. Coba kembali." };
+  try {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]) !== appId) continue;
+      const current = String(data[i][statusIdx] || "").trim().toLowerCase();
+      if (current === "hadir") return { success: false, message: "Status tidak dapat diubah karena presensi sudah tercatat." };
       sheet.getRange(i + 1, statusIdx + 1).setValue(status);
-      if (catatanIdx >= 0 && catatan) sheet.getRange(i + 1, catatanIdx + 1).setValue(catatan);
-      return { success: true };
+      if (catatanIdx >= 0) sheet.getRange(i + 1, catatanIdx + 1).setValue(catatan);
+      SpreadsheetApp.flush();
+      return { success: true, message: "Status pendaftaran diperbarui." };
     }
+    return { success: false, message: "Pendaftaran tidak ditemukan." };
+  } finally {
+    lock.releaseLock();
   }
-  return { success: false, message: "Pendaftaran tidak ditemukan." };
 }
 
 function adminDeleteApp(p) {
@@ -805,10 +820,14 @@ function adminDeleteEvent_(p) {
   const idIndex = headers.indexOf('id');
   if (idIndex < 0) return { success: false, message: 'Kolom id tidak ditemukan pada sheet Events.' };
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idIndex]) === eventId) {
-      sheet.deleteRow(i + 1);
-      return { success: true, message: 'Event berhasil dihapus.' };
+    if (String(data[i][idIndex]) !== eventId) continue;
+    const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+    const hasHistory = applications.some(a => String(a.eventId || "") === eventId);
+    if (hasHistory) {
+      return { success: false, message: "Event memiliki riwayat pendaftaran. Nonaktifkan event melalui status agar riwayat peserta tetap terjaga." };
     }
+    sheet.deleteRow(i + 1);
+    return { success: true, message: 'Event berhasil dihapus.' };
   }
   return { success: false, message: 'Event tidak ditemukan.' };
 }
