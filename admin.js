@@ -638,13 +638,33 @@ function renderEligibleCertificateParticipants(eventId) {
       : '<option value="">Belum ada peserta berstatus Hadir</option>';
 }
 
+function extractEventNevDriveFileId(value) {
+  const match = String(value || "").match(/([a-zA-Z0-9_-]{20,})/);
+  return match ? match[1] : "";
+}
+
+async function downloadEventNevPrivateFile(fileId) {
+  if (!fileId) { toast("Identitas file sertifikat tidak valid.", "error"); return; }
+  try {
+    const result = await apiFetch({ action:"getPrivateFile", fileId });
+    if (!result || !result.success || !result.base64) throw new Error(result?.message || "File sertifikat tidak dapat diakses.");
+    const binary = atob(result.base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: result.mimeType || "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a"); link.href = url; link.download = result.fileName || "sertifikat";
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) { toast(err.message || "Gagal mengunduh sertifikat.", "error"); }
+}
 function renderCertificatesTable() {
   if (!adminState.certificates.length) return '<div class="admin-overview-empty">Belum ada sertifikat yang diberikan.</div>';
   const usersById = Object.fromEntries(adminState.users.map(u => [String(u.id), u]));
   return '<table class="admin-table"><thead><tr><th>Peserta</th><th>Sertifikat</th><th>Tanggal</th><th>File</th></tr></thead><tbody>' +
     adminState.certificates.slice().sort((a,b) => String(b.tanggal || "").localeCompare(String(a.tanggal || ""))).map(c => {
       const user = usersById[String(c.userId)] || {};
-      return '<tr><td><b>' + sanitize(user.nama || c.userId || "—") + '</b><br><small>' + sanitize(user.email || "") + '</small></td><td>' + sanitize(c.namaEvent || c.nama || "Sertifikat") + '</td><td>' + formatDate(c.tanggal) + '</td><td>' + (c.url ? '<a class="btn btn-outline admin-btn-sm" href="' + sanitize(c.url) + '" target="_blank" rel="noopener">Lihat / Unduh ↗</a>' : '—') + '</td></tr>';
+      return '<tr><td><b>' + sanitize(user.nama || c.userId || "—") + '</b><br><small>' + sanitize(user.email || "") + '</small></td><td>' + sanitize(c.namaEvent || c.nama || "Sertifikat") + '</td><td>' + formatDate(c.tanggal) + '</td><td>' + (c.url ? '<button type="button" class="btn btn-outline admin-btn-sm" onclick="downloadEventNevPrivateFile(&quot;' + extractEventNevDriveFileId(c.url) + '&quot;)">Lihat / Unduh ↗</button>' : '—') + '</td></tr>';
     }).join("") + '</tbody></table>';
 }
 
