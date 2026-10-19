@@ -513,6 +513,9 @@ function handleDaftar(p) {
   const id = "APP_" + Date.now();
   sheet.appendRow([id, userId, eventId, ev ? ev.nama : eventId, ev ? ev.kategori : "", new Date().toISOString(), "pending", "", requirementFileId || "", requirementFileName || ""]);
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleCancelApplication(p) {
