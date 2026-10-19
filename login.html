@@ -543,11 +543,11 @@
       const oldLabel = button ? button.textContent : 'Masuk';
       if (button) { button.disabled = true; button.textContent = 'Memeriksa…'; }
       try {
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.set('action', 'login');
-        url.searchParams.set('email', email);
-        url.searchParams.set('password', pass);
-        const response = await fetch(url.toString());
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'login', email: email, password: pass })
+        });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const result = await response.json();
         if (!result.success || !result.user) {
@@ -568,6 +568,8 @@
           return;
         }
 
+        if (!result.sessionToken) { alert('Server belum mengaktifkan sesi aman. Hubungi administrator.'); return; }
+        localStorage.setItem('nevSession', result.sessionToken);
         localStorage.setItem('nevUser', JSON.stringify(user));
         window.location.href = adminLoginMode ? 'admin.html' : 'dashboard.html';
       } catch (err) {
@@ -615,29 +617,28 @@
       if (registerButton) { registerButton.disabled = true; registerButton.textContent = 'Membuat akun…'; }
 
       try {
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.set('action', 'register');
-        url.searchParams.set('nama', nama);
-        url.searchParams.set('email', email.toLowerCase());
-        url.searchParams.set('noHp', hp);
-        url.searchParams.set('jenis', jenis);
-        url.searchParams.set('password', pass);
-
-        // Simpan juga data pendidikan bila peserta mengisinya.
-        if (jenis === 'mahasiswa') {
-          url.searchParams.set('universitas', document.getElementById('mhs-univ').value.trim());
-          url.searchParams.set('nim', document.getElementById('mhs-nim').value.trim());
-          url.searchParams.set('angkatan', document.getElementById('mhs-angkatan').value.trim());
-          url.searchParams.set('prodi', document.getElementById('mhs-prodi').value.trim());
-          url.searchParams.set('fakultas', document.getElementById('mhs-fakultas').value.trim());
-        } else if (jenis === 'siswa') {
-          url.searchParams.set('sekolah', document.getElementById('siswa-sekolah').value.trim());
-          url.searchParams.set('nisn', document.getElementById('siswa-nisn').value.trim());
-          url.searchParams.set('angkatan', document.getElementById('siswa-angkatan').value.trim());
-          url.searchParams.set('jurusan', document.getElementById('siswa-jurusan').value.trim());
-        }
-
-        const response = await fetch(url.toString());
+        const registration = {
+          action: 'register', nama: nama, email: email.toLowerCase(),
+          noHp: hp, jenis: jenis, password: pass
+        };
+        if (jenis === 'mahasiswa') Object.assign(registration, {
+          universitas: document.getElementById('mhs-univ').value.trim(),
+          nim: document.getElementById('mhs-nim').value.trim(),
+          angkatan: document.getElementById('mhs-angkatan').value.trim(),
+          prodi: document.getElementById('mhs-prodi').value.trim(),
+          fakultas: document.getElementById('mhs-fakultas').value.trim()
+        });
+        if (jenis === 'siswa') Object.assign(registration, {
+          sekolah: document.getElementById('siswa-sekolah').value.trim(),
+          nisn: document.getElementById('siswa-nisn').value.trim(),
+          angkatan: document.getElementById('siswa-angkatan').value.trim(),
+          jurusan: document.getElementById('siswa-jurusan').value.trim()
+        });
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(registration)
+        });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const result = await response.json();
         if (!result.success) {
