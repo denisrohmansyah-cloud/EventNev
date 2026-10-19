@@ -960,6 +960,17 @@ function adminDeleteEvent_(p) {
   return { success: false, message: 'Event tidak ditemukan.' };
 }
 
+
+/* Add missing optional columns without rewriting or deleting existing rows/data. */
+function eventNevEnsureHeaders_(sheet, requiredHeaders) {
+  const lastColumn = Math.max(sheet.getLastColumn(), 1);
+  const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function(h) { return String(h || "").trim(); });
+  const missing = requiredHeaders.filter(function(name) { return headers.indexOf(name) < 0; });
+  if (!missing.length) return;
+  sheet.getRange(1, lastColumn + 1, 1, missing.length).setValues([missing]);
+  SpreadsheetApp.flush();
+}
+
 function adminSaveRecord_(sheetName, p, type) {
   // Pastikan pemanggil menyatakan email admin yang terdaftar.
   // Catatan: untuk keamanan produksi, endpoint perlu session token server-side.
@@ -984,8 +995,29 @@ function adminSaveRecord_(sheetName, p, type) {
   if (!isEvent && (!String(p.jabatan || "").trim() || !String(p.keahlian || "").trim())) {
     return { success: false, message: "Jabatan dan keahlian trainer wajib diisi." };
   }
+  if (isEvent) {
+    const quotaRaw = String(p.kuota == null ? "" : p.kuota).trim();
+    if (quotaRaw && (!/^\d+$/.test(quotaRaw) || Number(quotaRaw) < 0)) {
+      return { success: false, message: "Kuota harus berupa bilangan bulat nol atau lebih." };
+    }
+    const eventDate = String(p.tanggal || "").trim();
+    const deadline = String(p.batasPendaftaran || "").trim();
+    if (eventDate && !/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
+      return { success: false, message: "Format tanggal event tidak valid." };
+    }
+    if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+      return { success: false, message: "Format batas pendaftaran tidak valid." };
+    }
+    if (eventDate && deadline && deadline > eventDate) {
+      return { success: false, message: "Batas pendaftaran tidak boleh setelah tanggal pelaksanaan event." };
+    }
+  }
 
   const sheet = getSheet(sheetName);
+  const requiredHeaders = isEvent
+    ? ["batasPendaftaran","sasaran","waktu","persyaratanFoto","deskripsi","gambar","syarat","kuota","biaya","status"]
+    : ["bio","instagram","linkedin","urutan","foto","jabatan","keahlian"];
+  eventNevEnsureHeaders_(sheet, requiredHeaders);
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim());
   let rowNumber = -1;
