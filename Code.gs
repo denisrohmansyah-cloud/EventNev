@@ -490,7 +490,8 @@ function handleDaftar(p) {
   const evSheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(evSheet);
   const ev = events.find(e => String(e.id) === String(eventId) || String(e.nama) === String(eventId));
-  if (ev && String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
+  if (!ev) return { success: false, message: "Kegiatan tidak ditemukan atau sudah tidak tersedia." };
+  if (String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
   }
   if (existing && ["cancelled", "dibatalkan"].includes(String(existing.status || "").trim().toLowerCase())) {
@@ -587,7 +588,8 @@ function handleAbsen(p) {
     if (userIdIdx < 0 || eventIdIdx < 0 || statusIdx < 0) throw new Error("Kolom Applications tidak lengkap.");
 
     for (let i = 1; i < data.length; i++) {
-      const sameUser = String(data[i][userIdIdx] || "") === String(target.id || target.email);
+      const applicationUserId = String(data[i][userIdIdx] || "").trim().toLowerCase();
+      const sameUser = applicationUserId === String(target.id || "").trim().toLowerCase() || applicationUserId === String(target.email || "").trim().toLowerCase();
       const sameEvent = String(data[i][eventIdIdx] || "") === eventId;
       if (!sameUser || !sameEvent) continue;
 
@@ -753,21 +755,38 @@ function adminUpdateStatus(p) {
 }
 
 function adminDeleteApp(p) {
-  const { appId } = p;
+  const appId = String(p.appId || "").trim();
   if (!appId) return { success: false, message: "ID tidak ada." };
 
   const sheet = getSheet(SHEET.APPLICATIONS);
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const idIdx = headers.indexOf("id");
+  if (data.length < 2) return { success: false, message: "Data tidak ditemukan." };
+  const headers = data[0].map(h => String(h).trim());
+  const idIdx = headers.indexOf("id"), statusIdx = headers.indexOf("status"), eventIdx = headers.indexOf("eventId"), userIdx = headers.indexOf("userId");
+  if (idIdx < 0 || statusIdx < 0 || eventIdx < 0 || userIdx < 0) return { success: false, message: "Kolom pendaftaran tidak lengkap." };
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idIdx]) === String(appId)) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses perubahan lain. Coba kembali." };
+  try {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]) !== appId) continue;
+      const status = String(data[i][statusIdx] || "").trim().toLowerCase();
+      const userId = String(data[i][userIdx] || "");
+      const eventId = String(data[i][eventIdx] || "");
+      const hasCertificate = sheetToObjects(getSheet(SHEET.CERTIFICATES)).some(cert =>
+        String(cert.userId || "") === userId && String(cert.eventId || "") === eventId
+      );
+      if (status === "hadir" || hasCertificate) {
+        return { success: false, message: "Pendaftaran ini memiliki riwayat kehadiran atau sertifikat. Data tidak dihapus agar riwayat tetap terjaga." };
+      }
       sheet.deleteRow(i + 1);
-      return { success: true };
+      SpreadsheetApp.flush();
+      return { success: true, message: "Pendaftaran berhasil dihapus." };
     }
+    return { success: false, message: "Data tidak ditemukan." };
+  } finally {
+    lock.releaseLock();
   }
-  return { success: false, message: "Data tidak ditemukan." };
 }
 
 function adminGetStats() {
@@ -825,9 +844,11 @@ function adminDeleteEvent_(p) {
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idIndex]) !== eventId) continue;
     const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
-    const hasHistory = applications.some(a => String(a.eventId || "") === eventId);
-    if (hasHistory) {
-      return { success: false, message: "Event memiliki riwayat pendaftaran. Nonaktifkan event melalui status agar riwayat peserta tetap terjaga." };
+    const certificates = sheetToObjects(getSheet(SHEET.CERTIFICATES));
+    const hasApplications = applications.some(a => String(a.eventId || "") === eventId);
+    const hasCertificates = certificates.some(cert => String(cert.eventId || "") === eventId);
+    if (hasApplications || hasCertificates) {
+      return { success: false, message: "Event memiliki riwayat pendaftaran atau sertifikat. Nonaktifkan event melalui status agar riwayat tetap terjaga." };
     }
     sheet.deleteRow(i + 1);
     return { success: true, message: 'Event berhasil dihapus.' };
