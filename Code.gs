@@ -251,6 +251,8 @@ function doPost(e) {
       if (!folder) { folder = DriveApp.createFolder("EventNev - Foto Persyaratan Peserta"); props.setProperty("EVENTNEV_REQUIREMENT_FOLDER_ID", folder.getId()); }
       const name = String(p.fileName || "foto-persyaratan.jpg").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
       const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+      // Ikat file ke peserta dan event dari sesi/server, bukan identitas dari browser.
+      file.setDescription("EventNevRequirement:v1;userId=" + String(userAuth.user.id || "") + ";eventId=" + String(ev.id || ""));
       return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:"Foto berhasil diunggah."});
     }
     const adminActions = ["getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
@@ -287,6 +289,18 @@ function doPost(e) {
   } catch (err) { return jsonResponse({success:false,message:"Permintaan gagal: " + err.message}); }
 }
 
+function eventNevValidateRequirementUpload_(fileId, userId, eventId) {
+  const id = String(fileId || "").trim();
+  if (!/^[a-zA-Z0-9_-]{20,}$/.test(id)) return false;
+  try {
+    const file = DriveApp.getFileById(id);
+    const description = String(file.getDescription() || "");
+    const expected = "EventNevRequirement:v1;userId=" + String(userId || "") + ";eventId=" + String(eventId || "");
+    return description === expected;
+  } catch (err) {
+    return false;
+  }
+}
 function eventNevExtractDriveFileId_(value) {
   const match = String(value || "").match(/([a-zA-Z0-9_-]{20,})/);
   return match ? match[1] : "";
@@ -308,7 +322,8 @@ function handlePrivateFileRequest_(p) {
   });
   const requirementMatch = apps.some(function(app) {
     const storedUser = String(app.userId || "").trim().toLowerCase();
-    return String(app.requirementFileId || "").trim() === fileId && (isAdmin || userKeys.indexOf(storedUser) >= 0);
+    if (String(app.requirementFileId || "").trim() !== fileId || (!isAdmin && userKeys.indexOf(storedUser) < 0)) return false;
+    return eventNevValidateRequirementUpload_(fileId, String(app.userId || "").trim(), String(app.eventId || "").trim());
   });
   if (!certificateMatch && !requirementMatch) return { success:false, message:"Akses dokumen ditolak." };
   try {
@@ -541,6 +556,9 @@ function handleDaftar(p) {
   if (!ev) return { success: false, message: "Kegiatan tidak ditemukan atau sudah tidak tersedia." };
   if (String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
+  }
+  if (requirementFileId && !eventNevValidateRequirementUpload_(requirementFileId, userId, ev.id)) {
+    return { success: false, message: "Foto persyaratan tidak valid atau bukan milik akun/kegiatan ini. Unggah ulang foto persyaratan." };
   }
   if (existing && ["cancelled", "dibatalkan"].includes(String(existing.status || "").trim().toLowerCase())) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
