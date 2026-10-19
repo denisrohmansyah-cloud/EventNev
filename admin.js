@@ -219,21 +219,48 @@ async function renderEvents() {
 }
 
 function renderEventsTable() {
-  const rows = adminState.events.map(ev => `
-    <tr>
+  const rows = adminState.events.map(ev => {
+    const searchable = [ev.nama,ev.kategori,ev.lokasi,ev.sasaran].join(" ").toLowerCase();
+    const status = String(ev.status || "Buka").trim().toLowerCase();
+    return `
+    <tr class="admin-event-row" data-search="${sanitize(searchable)}" data-status="${sanitize(status)}">
       <td>${sanitize(ev.nama)}</td><td>${sanitize(ev.kategori || "—")}</td>
       <td>${formatDate(ev.tanggal)}</td><td>${sanitize(ev.lokasi || "—")}</td>
       <td>${sanitize(ev.kuota || "—")}</td><td>${sanitize(ev.status || "—")}</td>
       <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editEvent('${sanitize(String(ev.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteEvent('${sanitize(String(ev.id))}','${sanitize(ev.nama)}')">Hapus</button></div></td>
-    </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
+    </tr>`;
+  }).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
   setContent(`
     <section><div class="db-section-title">Kelola Event
       <button class="btn btn-red admin-btn-sm" onclick="showEventForm()">+ Tambah Event</button>
     </div><div id="eventFormWrap"></div>
+    <div class="admin-app-toolbar" style="margin:14px 0">
+      <label class="admin-app-search"><span aria-hidden="true">⌕</span><input id="adminEventSearch" type="search" placeholder="Cari nama, kategori, atau lokasi…" oninput="filterAdminEvents()" autocomplete="off"></label>
+      <select id="adminEventStatusFilter" class="admin-select" onchange="filterAdminEvents()" aria-label="Filter status event">
+        <option value="all">Semua status</option><option value="buka">Buka</option><option value="terbuka">Terbuka</option><option value="tutup">Tutup</option><option value="ditutup">Ditutup</option><option value="penuh">Penuh</option>
+      </select>
+    </div>
+    <p id="adminEventEmpty" class="admin-app-empty" hidden>Tidak ada event yang cocok dengan pencarian.</p>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Nama Event</th><th>Kategori</th><th>Tanggal</th><th>Lokasi</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></section>`);
+      <tbody id="adminEventsBody">${rows}</tbody></table></div></section>`);
+  filterAdminEvents();
 }
+
+window.filterAdminEvents = function() {
+  const query = String(document.getElementById("adminEventSearch")?.value || "").trim().toLowerCase();
+  const selected = String(document.getElementById("adminEventStatusFilter")?.value || "all").toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("#adminEventsBody .admin-event-row").forEach(row => {
+    const status = row.dataset.status || "buka";
+    const statusMatches = selected === "all" || status === selected;
+    const matches = statusMatches && (row.dataset.search || "").includes(query);
+    row.hidden = !matches;
+    if (matches) visible++;
+  });
+  const empty = document.getElementById("adminEventEmpty");
+  if (empty) empty.hidden = visible > 0;
+};
 
 window.showEventForm = function(id = "") {
   const ev = adminState.events.find(x => String(x.id) === String(id)) || {};
