@@ -781,16 +781,35 @@ async function renderTrainers() {
 }
 
 function renderTrainersTable() {
-  const rows = adminState.trainers.map(t => `<tr>
+  const rows = adminState.trainers.map(t => {
+    const searchable = [t.nama,t.jabatan,t.keahlian,t.bio].join(" ").toLowerCase();
+    return `<tr class="admin-trainer-row" data-search="${sanitize(searchable)}">
     <td>${sanitize(t.nama)}</td><td>${sanitize(t.jabatan || "—")}</td>
     <td>${sanitize(t.keahlian || "—")}</td>
     <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editTrainer('${sanitize(String(t.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteTrainer('${sanitize(String(t.id))}','${sanitize(t.nama)}')">Hapus</button></div></td>
-  </tr>`).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
+  </tr>`;
+  }).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
   setContent(`<section><div class="db-section-title">Kelola Trainer
     <button class="btn btn-red admin-btn-sm" onclick="showTrainerForm()">+ Tambah Trainer</button></div>
-    <div id="trainerFormWrap"></div><div class="table-wrap"><table class="admin-table">
-    <thead><tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>
+    <div id="trainerFormWrap"></div>
+    <div class="admin-app-toolbar" style="margin:14px 0"><label class="admin-app-search"><span aria-hidden="true">⌕</span><input id="adminTrainerSearch" type="search" placeholder="Cari nama, jabatan, atau keahlian…" oninput="filterAdminTrainers()" autocomplete="off"></label></div>
+    <p id="adminTrainerEmpty" class="admin-app-empty" hidden>Tidak ada trainer yang cocok dengan pencarian.</p>
+    <div class="table-wrap"><table class="admin-table">
+    <thead><tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th><th>Aksi</th></tr></thead><tbody id="adminTrainersBody">${rows}</tbody>
     </table></div></section>`);
+  filterAdminTrainers();
+}
+
+window.filterAdminTrainers = function() {
+  const query = String(document.getElementById("adminTrainerSearch")?.value || "").trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("#adminTrainersBody .admin-trainer-row").forEach(row => {
+    const match = (row.dataset.search || "").includes(query);
+    row.hidden = !match;
+    if (match) visible++;
+  });
+  const empty = document.getElementById("adminTrainerEmpty");
+  if (empty) empty.hidden = visible > 0;
 }
 
 window.showTrainerForm = function(id = "") {
