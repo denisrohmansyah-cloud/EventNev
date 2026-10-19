@@ -122,6 +122,7 @@ function renderView() {
     case "users":        renderUsers(); break;
     case "trainers":     renderTrainers(); break;
     case "certificates": renderCertificates(); break;
+    case "audit": renderAuditLog(); break;
   }
 }
 
@@ -218,21 +219,48 @@ async function renderEvents() {
 }
 
 function renderEventsTable() {
-  const rows = adminState.events.map(ev => `
-    <tr>
+  const rows = adminState.events.map(ev => {
+    const searchable = [ev.nama,ev.kategori,ev.lokasi,ev.sasaran].join(" ").toLowerCase();
+    const status = String(ev.status || "Buka").trim().toLowerCase();
+    return `
+    <tr class="admin-event-row" data-search="${sanitize(searchable)}" data-status="${sanitize(status)}">
       <td>${sanitize(ev.nama)}</td><td>${sanitize(ev.kategori || "—")}</td>
       <td>${formatDate(ev.tanggal)}</td><td>${sanitize(ev.lokasi || "—")}</td>
       <td>${sanitize(ev.kuota || "—")}</td><td>${sanitize(ev.status || "—")}</td>
       <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editEvent('${sanitize(String(ev.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteEvent('${sanitize(String(ev.id))}','${sanitize(ev.nama)}')">Hapus</button></div></td>
-    </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
+    </tr>`;
+  }).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;">Belum ada event. Tambahkan event pertama.</td></tr>';
   setContent(`
     <section><div class="db-section-title">Kelola Event
       <button class="btn btn-red admin-btn-sm" onclick="showEventForm()">+ Tambah Event</button>
     </div><div id="eventFormWrap"></div>
+    <div class="admin-app-toolbar" style="margin:14px 0">
+      <label class="admin-app-search"><span aria-hidden="true">⌕</span><input id="adminEventSearch" type="search" placeholder="Cari nama, kategori, atau lokasi…" oninput="filterAdminEvents()" autocomplete="off"></label>
+      <select id="adminEventStatusFilter" class="admin-select" onchange="filterAdminEvents()" aria-label="Filter status event">
+        <option value="all">Semua status</option><option value="buka">Buka</option><option value="terbuka">Terbuka</option><option value="tutup">Tutup</option><option value="ditutup">Ditutup</option><option value="penuh">Penuh</option>
+      </select>
+    </div>
+    <p id="adminEventEmpty" class="admin-app-empty" hidden>Tidak ada event yang cocok dengan pencarian.</p>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Nama Event</th><th>Kategori</th><th>Tanggal</th><th>Lokasi</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></section>`);
+      <tbody id="adminEventsBody">${rows}</tbody></table></div></section>`);
+  filterAdminEvents();
 }
+
+window.filterAdminEvents = function() {
+  const query = String(document.getElementById("adminEventSearch")?.value || "").trim().toLowerCase();
+  const selected = String(document.getElementById("adminEventStatusFilter")?.value || "all").toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("#adminEventsBody .admin-event-row").forEach(row => {
+    const status = row.dataset.status || "buka";
+    const statusMatches = selected === "all" || status === selected;
+    const matches = statusMatches && (row.dataset.search || "").includes(query);
+    row.hidden = !matches;
+    if (matches) visible++;
+  });
+  const empty = document.getElementById("adminEventEmpty");
+  if (empty) empty.hidden = visible > 0;
+};
 
 window.showEventForm = function(id = "") {
   const ev = adminState.events.find(x => String(x.id) === String(id)) || {};
@@ -347,6 +375,7 @@ function renderApplicationsTable() {
         <select id="adminApplicationStatusFilter" class="admin-select" onchange="filterAdminApplications()" aria-label="Filter status">
           <option value="all">Semua status</option><option value="pending">Menunggu</option><option value="approved">Disetujui</option><option value="rejected">Ditolak</option>
         </select>
+        <button class="btn btn-outline admin-btn-sm" onclick="exportVisibleApplicationsCsv()">⇩ Ekspor CSV</button>
         <button class="btn btn-outline admin-btn-sm" onclick="renderApplications()">↻ Perbarui</button>
       </div>
       <div class="table-wrap">
@@ -359,6 +388,56 @@ function renderApplicationsTable() {
     </div>
   `);
   filterAdminApplications();
+}
+
+
+window.exportVisibleApplicationsCsv = function() {
+  const rows = adminState.applications.filter(app => {
+    const row = Array.from(document.querySelectorAll("#adminApplicationsBody .admin-application-row"))
+      .find(el => el.querySelector("[data-app-id]")?.dataset.appId === String(app.id));
+    return row && !row.hidden;
+  });
+  if (!rows.length) { toast("Tidak ada data yang cocok untuk diekspor.", "error"); return; }
+  const columns = [
+    ["Event", a => a.namaEvent || a.eventId],
+    ["Nama Peserta", a => a.namaPeserta || a.nama],
+    ["Email", a => a.emailPeserta],
+    ["NIM/NIS", a => a.nimPeserta],
+    ["Asal Institusi", a => a.universitasPeserta],
+    ["Tanggal Daftar", a => a.tanggalDaftar],
+    ["Status", a => a.status]
+  ];
+  const cell = value => {
+    let text = String(value == null ? "" : value);
+    if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
+  const csv = [columns.map(c => cell(c[0])).join(","), ...rows.map(a => columns.map(c => cell(c[1](a))).join(","))].join("\r\n");
+  const blob = new Blob(["\uFEFF", csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "eventnev-peserta-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("CSV berhasil disiapkan.", "success");
+};
+
+async function renderAuditLog() {
+  setContent('<div class="db-loading">Memuat riwayat aktivitas…</div>');
+  try {
+    const rows = await apiFetch({action:"getAuditLog"});
+    const logs = Array.isArray(rows) ? rows : [];
+    const safe = value => sanitize(value == null ? "" : String(value));
+    const body = logs.map(item => {
+      let timestamp = item.timestamp || "";
+      try { timestamp = new Date(timestamp).toLocaleString("id-ID", {dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Jakarta"}); } catch (e) {}
+      return '<tr><td data-label="Waktu">' + safe(timestamp || "—") + '</td><td data-label="Admin">' + safe(item.actor || "—") + '</td><td data-label="Aktivitas">' + safe(item.action || "—") + '</td><td data-label="Target">' + safe(item.target || "—") + '</td><td data-label="Detail">' + safe(item.details || "—") + '</td></tr>';
+    }).join("");
+    setContent('<section><div class="db-section-title">Riwayat Aktivitas</div><p class="admin-app-help">Maksimal 100 aktivitas terbaru yang tercatat setelah fitur audit diaktifkan. Aktivitas lama tidak dibuat secara retroaktif.</p><div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-outline admin-btn-sm" onclick="renderAuditLog()">↻ Perbarui</button></div><div class="table-wrap"><table class="admin-table"><thead><tr><th>Waktu</th><th>Admin</th><th>Aktivitas</th><th>Target</th><th>Detail</th></tr></thead><tbody>' + (body || '<tr><td colspan="5" style="text-align:center;padding:28px">Belum ada aktivitas yang tercatat.</td></tr>') + '</tbody></table></div></section>');
+  } catch (err) {
+    setContent('<section><div class="db-section-title">Riwayat Aktivitas</div><p>Riwayat belum dapat dimuat. Periksa koneksi dan sesi admin.</p><button class="btn btn-outline admin-btn-sm" onclick="renderAuditLog()">Coba lagi</button></section>');
+  }
 }
 
 window.filterAdminApplications = function() {
@@ -404,6 +483,7 @@ window.viewApplicantDetails = function(appId) {
         ${field("Tanggal daftar", formatDate(app.tanggalDaftar))}
         ${field("Status pendaftaran", ({pending:"Menunggu",approved:"Disetujui",rejected:"Ditolak",hadir:"Hadir"})[String(app.status || "").toLowerCase()] || app.status)}
         ${field("Catatan peserta", app.catatan)}
+        ${app.requirementFileId ? '<button type="button" class="btn btn-outline admin-btn-sm" onclick="downloadEventNevPrivateFile(&quot;' + extractEventNevDriveFileId(app.requirementFileId) + '&quot;)">Unduh Foto Persyaratan</button>' : ''}
       </div>
       <footer class="admin-app-modal-foot">
         <button type="button" class="btn btn-outline" onclick="document.getElementById('adminApplicantModal')?.remove()">Tutup</button>
@@ -638,13 +718,33 @@ function renderEligibleCertificateParticipants(eventId) {
       : '<option value="">Belum ada peserta berstatus Hadir</option>';
 }
 
+function extractEventNevDriveFileId(value) {
+  const match = String(value || "").match(/([a-zA-Z0-9_-]{20,})/);
+  return match ? match[1] : "";
+}
+
+async function downloadEventNevPrivateFile(fileId) {
+  if (!fileId) { toast("Identitas file sertifikat tidak valid.", "error"); return; }
+  try {
+    const result = await apiFetch({ action:"getPrivateFile", fileId });
+    if (!result || !result.success || !result.base64) throw new Error(result?.message || "File sertifikat tidak dapat diakses.");
+    const binary = atob(result.base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: result.mimeType || "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a"); link.href = url; link.download = result.fileName || "sertifikat";
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) { toast(err.message || "Gagal mengunduh sertifikat.", "error"); }
+}
 function renderCertificatesTable() {
   if (!adminState.certificates.length) return '<div class="admin-overview-empty">Belum ada sertifikat yang diberikan.</div>';
   const usersById = Object.fromEntries(adminState.users.map(u => [String(u.id), u]));
   return '<table class="admin-table"><thead><tr><th>Peserta</th><th>Sertifikat</th><th>Tanggal</th><th>File</th></tr></thead><tbody>' +
     adminState.certificates.slice().sort((a,b) => String(b.tanggal || "").localeCompare(String(a.tanggal || ""))).map(c => {
       const user = usersById[String(c.userId)] || {};
-      return '<tr><td><b>' + sanitize(user.nama || c.userId || "—") + '</b><br><small>' + sanitize(user.email || "") + '</small></td><td>' + sanitize(c.namaEvent || c.nama || "Sertifikat") + '</td><td>' + formatDate(c.tanggal) + '</td><td>' + (c.url ? '<a class="btn btn-outline admin-btn-sm" href="' + sanitize(c.url) + '" target="_blank" rel="noopener">Lihat / Unduh ↗</a>' : '—') + '</td></tr>';
+      return '<tr><td><b>' + sanitize(user.nama || c.userId || "—") + '</b><br><small>' + sanitize(user.email || "") + '</small></td><td>' + sanitize(c.namaEvent || c.nama || "Sertifikat") + '</td><td>' + formatDate(c.tanggal) + '</td><td>' + (c.url ? '<button type="button" class="btn btn-outline admin-btn-sm" onclick="downloadEventNevPrivateFile(&quot;' + extractEventNevDriveFileId(c.url) + '&quot;)">Lihat / Unduh ↗</button>' : '—') + '</td></tr>';
     }).join("") + '</tbody></table>';
 }
 
@@ -702,16 +802,35 @@ async function renderTrainers() {
 }
 
 function renderTrainersTable() {
-  const rows = adminState.trainers.map(t => `<tr>
+  const rows = adminState.trainers.map(t => {
+    const searchable = [t.nama,t.jabatan,t.keahlian,t.bio].join(" ").toLowerCase();
+    return `<tr class="admin-trainer-row" data-search="${sanitize(searchable)}">
     <td>${sanitize(t.nama)}</td><td>${sanitize(t.jabatan || "—")}</td>
     <td>${sanitize(t.keahlian || "—")}</td>
     <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline admin-btn-sm" onclick="editTrainer('${sanitize(String(t.id))}')">Edit</button><button class="btn btn-outline admin-btn-sm" style="border-color:#e1262f;color:#ff525b" onclick="deleteTrainer('${sanitize(String(t.id))}','${sanitize(t.nama)}')">Hapus</button></div></td>
-  </tr>`).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
+  </tr>`;
+  }).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;">Belum ada trainer. Tambahkan trainer pertama.</td></tr>';
   setContent(`<section><div class="db-section-title">Kelola Trainer
     <button class="btn btn-red admin-btn-sm" onclick="showTrainerForm()">+ Tambah Trainer</button></div>
-    <div id="trainerFormWrap"></div><div class="table-wrap"><table class="admin-table">
-    <thead><tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>
+    <div id="trainerFormWrap"></div>
+    <div class="admin-app-toolbar" style="margin:14px 0"><label class="admin-app-search"><span aria-hidden="true">⌕</span><input id="adminTrainerSearch" type="search" placeholder="Cari nama, jabatan, atau keahlian…" oninput="filterAdminTrainers()" autocomplete="off"></label></div>
+    <p id="adminTrainerEmpty" class="admin-app-empty" hidden>Tidak ada trainer yang cocok dengan pencarian.</p>
+    <div class="table-wrap"><table class="admin-table">
+    <thead><tr><th>Nama</th><th>Jabatan</th><th>Keahlian</th><th>Aksi</th></tr></thead><tbody id="adminTrainersBody">${rows}</tbody>
     </table></div></section>`);
+  filterAdminTrainers();
+}
+
+window.filterAdminTrainers = function() {
+  const query = String(document.getElementById("adminTrainerSearch")?.value || "").trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("#adminTrainersBody .admin-trainer-row").forEach(row => {
+    const match = (row.dataset.search || "").includes(query);
+    row.hidden = !match;
+    if (match) visible++;
+  });
+  const empty = document.getElementById("adminTrainerEmpty");
+  if (empty) empty.hidden = visible > 0;
 }
 
 window.showTrainerForm = function(id = "") {

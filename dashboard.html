@@ -10,7 +10,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="dashboard.css?v=20261018-9">
+  <link rel="stylesheet" href="dashboard.css?v=20261019-feature-enhancements">
+  <style>
+    .db-app-card{flex-wrap:wrap}
+    .nev-app-timeline{display:flex;flex-basis:100%;width:100%;gap:0;list-style:none;padding:14px 0 0;margin:14px 0 0;border-top:1px solid var(--dark-4);font-size:.72rem;color:var(--text-dim)}
+    .nev-app-timeline-end{flex-basis:100%;width:100%}
+    .nev-app-timeline li{position:relative;display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+    .nev-timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--dark-4);flex:0 0 auto}
+    .nev-app-timeline li.done .nev-timeline-dot,.nev-app-timeline li.current .nev-timeline-dot{background:var(--red)}
+    .nev-app-timeline li.current{color:var(--text);font-weight:700}
+    .nev-app-timeline-end{display:block;font-weight:700;color:var(--red)}
+    @media(max-width:480px){.nev-app-timeline{font-size:.65rem;gap:4px}.nev-app-timeline li{gap:4px;overflow-wrap:anywhere}}
+  </style>
 </head>
 <body class="dashboard-body">
 
@@ -67,6 +78,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <script src="scanner.js"></script>
-<script src="dashboard.js?v=20261019-security-phase1"></script>
+<script src="dashboard.js?v=20261019-feature-enhancements"></script>
 </body>
 </html>

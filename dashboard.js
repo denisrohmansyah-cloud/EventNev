@@ -403,11 +403,23 @@ function buildAppCard(app) {
   const s = String(app.status || "pending").toLowerCase();
   const info = statusMap[s] || { text: sanitize(app.status || "—"), cls: "badge-openlab" };
   const canCancel = ["pending", "menunggu"].includes(s) && app.id;
+  const hasCertificate = state.certificates.some(c => String(c.eventId || "") === String(app.eventId || ""));
+  const timelineStatus = ["cancelled","dibatalkan"].includes(s) ? "cancelled" : (["rejected","ditolak"].includes(s) ? "rejected" : (hasCertificate ? "certificate" : (["hadir"].includes(s) ? "attended" : (["approved","disetujui"].includes(s) ? "approved" : "pending"))));
+  const timeline = [
+    {key:"pending",label:"Terdaftar"},
+    {key:"approved",label:"Verifikasi"},
+    {key:"attended",label:"Kehadiran"},
+    {key:"certificate",label:"Sertifikat"}
+  ];
+  const timelineIndex = timelineStatus === "certificate" ? 3 : (timelineStatus === "attended" ? 2 : (timelineStatus === "approved" ? 1 : 0));
+  const timelineHtml = timelineStatus === "rejected" || timelineStatus === "cancelled"
+    ? '<div class="nev-app-timeline nev-app-timeline-end"><span>' + (timelineStatus === "rejected" ? "Pendaftaran ditolak" : "Pendaftaran dibatalkan") + '</span></div>'
+    : '<ol class="nev-app-timeline" aria-label="Tahapan pendaftaran">' + timeline.map((step, index) => '<li class="' + (index < timelineIndex ? "done" : (index === timelineIndex ? "current" : "")) + '"><span class="nev-timeline-dot" aria-hidden="true"></span><span>' + step.label + '</span></li>').join("") + '</ol>';
   const searchable = String((app.namaEvent || "") + " " + (app.eventId || "") + " " + (app.kategori || "")).toLowerCase();
   const filterStatus = ["menunggu", ""].includes(s) ? "pending" : (["disetujui"].includes(s) ? "approved" : (["dibatalkan"].includes(s) ? "cancelled" : s));
   return '<div class="db-app-card" data-search="' + sanitize(searchable) + '" data-status="' + sanitize(filterStatus) + '"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
     (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\'' + sanitize(app.id) + '\')">Batalkan pendaftaran</button>' : "") +
-    '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div></div>';
+    '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div>' + timelineHtml + '</div>';
 }
 
 async function cancelMyApplication(applicationId) {
@@ -422,6 +434,26 @@ async function cancelMyApplication(applicationId) {
   } catch (err) { console.error("Pembatalan pendaftaran gagal:", err); toast("Tidak dapat menghubungi server. Coba lagi.", "error"); }
 }
 
+function extractEventNevDriveFileId(value) {
+  const match = String(value || "").match(/([a-zA-Z0-9_-]{20,})/);
+  return match ? match[1] : "";
+}
+
+async function downloadEventNevPrivateFile(fileId) {
+  if (!fileId) { toast("Identitas file sertifikat tidak valid.", "error"); return; }
+  try {
+    const result = await apiFetch({ action:"getPrivateFile", fileId });
+    if (!result || !result.success || !result.base64) throw new Error(result?.message || "File sertifikat tidak dapat diakses.");
+    const binary = atob(result.base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: result.mimeType || "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a"); link.href = url; link.download = result.fileName || "sertifikat";
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) { toast(err.message || "Gagal mengunduh sertifikat.", "error"); }
+}
 /* --- CERTIFICATES --- */
 function renderCertificates() {
   setContent(`
@@ -435,7 +467,7 @@ function renderCertificates() {
                 <div style="font-weight:700;font-size:.95rem;">${sanitize(c.namaEvent || c.nama || "Sertifikat Kegiatan")}</div>
                 <div style="font-size:.78rem;color:var(--text-dim);">Tanggal terbit: ${formatDate(c.tanggal)}</div>
                 <div style="font-size:.72rem;color:var(--text-dim);word-break:break-word;">Nomor sertifikat: ${sanitize(c.id || "—")}</div>
-                ${c.url ? `<a href="${sanitize(c.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:.82rem;padding:10px 14px;margin-top:6px;text-align:center;">⬇ Unduh Sertifikat</a>` : '<span style="font-size:.8rem;color:var(--text-dim);">File sertifikat belum tersedia.</span>'}
+                ${c.url ? `<button type="button" onclick="downloadEventNevPrivateFile(&quot;${extractEventNevDriveFileId(c.url)}&quot;)" class="btn btn-primary" style="font-size:.82rem;padding:10px 14px;margin-top:6px;text-align:center;">⬇ Unduh Sertifikat</button>` : '<span style="font-size:.8rem;color:var(--text-dim);">File sertifikat belum tersedia.</span>'}
               </div>
             `).join("")}
            </div>`
