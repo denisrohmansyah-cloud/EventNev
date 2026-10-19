@@ -191,100 +191,125 @@ const SHEET = {
 };
 
 function doGet(e) {
-  const params = e.parameter || {};
-  const action = params.action || "";
-
+  const params = (e && e.parameter) || {};
+  const action = String(params.action || "");
+  const protectedActions = ["login","register","updateProfile","daftar","getMyApplications","cancelApplication","getMyCertificates","absen","getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
+  if (protectedActions.indexOf(action) >= 0) return jsonResponse({success:false,message:"Aksi ini wajib menggunakan POST. Silakan muat ulang halaman."});
   try {
     let result;
     switch (action) {
-      case "login":           result = handleLogin(params); break;
-      case "register":        result = handleRegister(params); break;
-      case "updateProfile":   result = handleUpdateProfile(params); break;
-      case "getEvents":       result = handleGetEvents(params); break;
-      case "getTrainers":     result = handleGetTrainers(params); break;
-      case "getAlumniCount":  result = handleAlumniCount(params); break;
-      case "daftar":          result = handleDaftar(params); break;
-      case "getMyApplications": result = handleGetMyApplications(params); break;
-      case "cancelApplication": result = handleCancelApplication(params); break;
-      case "getMyCertificates": result = handleGetMyCertificates(params); break;
-      case "absen":           result = handleAbsen(params); break;
-      // Admin
-      case "getAllApplications": result = adminGetAllApplications(params); break;
-      case "getCertificates": result = adminGetCertificates_(params); break;
-      case "getUsers":        result = adminGetUsers(params); break;
-      case "updateStatus":    result = adminUpdateStatus(params); break;
-      case "deleteApp":       result = adminDeleteApp(params); break;
-      case "getStats":        result = adminGetStats(params); break;
-      case "addEvent":         result = adminSaveRecord_("Events", params, "event"); break;
-      case "updateEvent":      result = adminSaveRecord_("Events", params, "event"); break;
-      case "deleteEvent":       result = adminDeleteEvent_(params); break;
-      case "addTrainer":       result = adminSaveRecord_("Trainers", params, "trainer"); break;
-      case "updateTrainer":    result = adminSaveRecord_("Trainers", params, "trainer"); break;
-      case "deleteTrainer":     result = adminDeleteTrainer_(params); break;
-      default:
-        result = { success: false, message: "Aksi tidak dikenal: " + action };
+      case "getEvents": result = handleGetEvents(params); break;
+      case "getTrainers": result = handleGetTrainers(params); break;
+      case "getAlumniCount": result = handleAlumniCount(params); break;
+      default: result = {success:false,message:"Aksi tidak dikenal: " + action};
     }
     return jsonResponse(result);
-  } catch (err) {
-    return jsonResponse({ success: false, message: "Server error: " + err.message });
-  }
+  } catch (err) { return jsonResponse({success:false,message:"Server error: " + err.message}); }
 }
-
 function doPost(e) {
   try {
-    const p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (p.action === 'uploadCertificate') return jsonResponse(adminUploadCertificate_(p));
-    if (p.action === 'uploadAdminImage') {
-      const email = String(p.adminEmail || '').trim().toLowerCase();
-      const users = sheetToObjects(getSheet(SHEET.USERS));
-      const admin = users.find(u => String(u.email || '').trim().toLowerCase() === email && String(u.jenis || '').trim() === 'Admin');
-      if (!admin) return jsonResponse({success:false,message:'Akses upload hanya untuk admin.'});
-      if (['event','trainer'].indexOf(String(p.kind || '')) < 0) return jsonResponse({success:false,message:'Jenis gambar tidak valid.'});
-      const mime = String(p.mimeType || '');
-      if (['image/jpeg','image/png','image/webp'].indexOf(mime) < 0) return jsonResponse({success:false,message:'Gunakan gambar JPG, PNG, atau WEBP.'});
-      const b64 = String(p.base64 || '');
-      if (!b64 || b64.length > 7000000) return jsonResponse({success:false,message:'Ukuran gambar terlalu besar.'});
+    const p = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+    const action = String(p.action || "");
+    if (action === "login") return jsonResponse(handleLogin(p));
+    if (action === "register") return jsonResponse(handleRegister(p));
+    if (action === "logout") { revokeEventNevSession_(p.sessionToken); return jsonResponse({success:true}); }
+    if (action === "uploadCertificate" || action === "uploadAdminImage") {
+      const adminAuth = requireEventNevAdmin_(p);
+      if (!adminAuth.success) return jsonResponse(adminAuth);
+      p.adminEmail = adminAuth.user.email;
+      if (action === "uploadCertificate") return jsonResponse(adminUploadCertificate_(p));
+      if (["event","trainer"].indexOf(String(p.kind || "")) < 0) return jsonResponse({success:false,message:"Jenis gambar tidak valid."});
+      const mime = String(p.mimeType || "");
+      if (["image/jpeg","image/png","image/webp"].indexOf(mime) < 0) return jsonResponse({success:false,message:"Gunakan gambar JPG, PNG, atau WEBP."});
+      const b64 = String(p.base64 || "");
+      if (!b64 || b64.length > 7000000) return jsonResponse({success:false,message:"Ukuran gambar terlalu besar."});
       const bytes = Utilities.base64Decode(b64);
-      if (bytes.length > 5 * 1024 * 1024) return jsonResponse({success:false,message:'Ukuran gambar maksimal 5 MB.'});
-      const folderKey = 'EVENTNEV_PUBLIC_IMAGES_FOLDER_ID';
+      if (bytes.length > 5 * 1024 * 1024) return jsonResponse({success:false,message:"Ukuran gambar maksimal 5 MB."});
       const props = PropertiesService.getScriptProperties();
+      const folderKey = "EVENTNEV_PUBLIC_IMAGES_FOLDER_ID";
       let folder = null;
-      const savedFolder = props.getProperty(folderKey);
-      if (savedFolder) { try { folder = DriveApp.getFolderById(savedFolder); } catch (ignore) {} }
-      if (!folder) { folder = DriveApp.createFolder('EventNev - Gambar Event dan Trainer'); props.setProperty(folderKey, folder.getId()); }
-      const cleanName = String(p.fileName || 'eventnev-image').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0,100);
+      const folderId = props.getProperty(folderKey);
+      if (folderId) { try { folder = DriveApp.getFolderById(folderId); } catch (ignore) {} }
+      if (!folder) { folder = DriveApp.createFolder("EventNev - Gambar Event dan Trainer"); props.setProperty(folderKey, folder.getId()); }
+      const cleanName = String(p.fileName || "eventnev-image").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
       const file = folder.createFile(Utilities.newBlob(bytes, mime, cleanName));
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      const directUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
-      return jsonResponse({success:true,url:directUrl,fileId:file.getId(),message:'Gambar berhasil diunggah.'});
+      return jsonResponse({success:true,url:"https://drive.google.com/uc?export=view&id="+file.getId(),fileId:file.getId(),message:"Gambar berhasil diunggah."});
     }
-    if (p.action !== 'uploadRequirementPhoto') return jsonResponse({success:false,message:'Aksi tidak dikenal.'});
-    const userId = String(p.userId || '').trim();
-    const email = String(p.email || '').trim().toLowerCase();
-    if (!userId || !email) return jsonResponse({success:false,message:'Silakan login kembali.'});
-    const users = sheetToObjects(getSheet(SHEET.USERS));
-    const user = users.find(u => (String(u.id || '') === userId || String(u.email || '').toLowerCase() === userId.toLowerCase()) && String(u.email || '').toLowerCase() === email);
-    if (!user) return jsonResponse({success:false,message:'Akun peserta tidak valid.'});
-    const eventId = String(p.eventId || '');
-    const ev = sheetToObjects(getSheet(SHEET.EVENTS)).find(x => String(x.id) === eventId || String(x.nama) === eventId);
-    if (!ev || !String(ev.persyaratanFoto || '').trim()) return jsonResponse({success:false,message:'Kegiatan ini tidak meminta foto persyaratan.'});
-    const mime = String(p.mimeType || '');
-    if (['image/jpeg','image/png','image/webp'].indexOf(mime) < 0) return jsonResponse({success:false,message:'Format harus JPG, PNG, atau WEBP.'});
-    const b64 = String(p.base64 || '');
-    if (!b64 || b64.length > 1400000) return jsonResponse({success:false,message:'Foto harus di bawah 1 MB setelah kompresi.'});
-    const bytes = Utilities.base64Decode(b64);
-    if (bytes.length >= 1048576) return jsonResponse({success:false,message:'Foto harus di bawah 1 MB.'});
-    const props = PropertiesService.getScriptProperties();
-    let folder = null;
-    const savedId = props.getProperty('EVENTNEV_REQUIREMENT_FOLDER_ID');
-    if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
-    if (!folder) { folder = DriveApp.createFolder('EventNev - Foto Persyaratan Peserta'); props.setProperty('EVENTNEV_REQUIREMENT_FOLDER_ID', folder.getId()); }
-    const name = String(p.fileName || 'foto-persyaratan.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0,100);
-    const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
-    return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:'Foto berhasil diunggah.'});
-  } catch (err) { return jsonResponse({success:false,message:'Upload gagal: ' + err.message}); }
+    if (action === "uploadRequirementPhoto") {
+      const userAuth = requireEventNevParticipant_(p);
+      if (!userAuth.success) return jsonResponse(userAuth);
+      p.userId = userAuth.user.id; p.email = userAuth.user.email;
+      const ev = sheetToObjects(getSheet(SHEET.EVENTS)).find(x => String(x.id) === String(p.eventId) || String(x.nama) === String(p.eventId));
+      if (!ev || !String(ev.persyaratanFoto || "").trim()) return jsonResponse({success:false,message:"Kegiatan ini tidak meminta foto persyaratan."});
+      const mime = String(p.mimeType || "");
+      if (["image/jpeg","image/png","image/webp"].indexOf(mime) < 0) return jsonResponse({success:false,message:"Format harus JPG, PNG, atau WEBP."});
+      const b64 = String(p.base64 || "");
+      if (!b64 || b64.length > 1400000) return jsonResponse({success:false,message:"Foto harus di bawah 1 MB setelah kompresi."});
+      const bytes = Utilities.base64Decode(b64);
+      if (bytes.length >= 1048576) return jsonResponse({success:false,message:"Foto harus di bawah 1 MB."});
+      const props = PropertiesService.getScriptProperties(); let folder = null;
+      const savedId = props.getProperty("EVENTNEV_REQUIREMENT_FOLDER_ID");
+      if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
+      if (!folder) { folder = DriveApp.createFolder("EventNev - Foto Persyaratan Peserta"); props.setProperty("EVENTNEV_REQUIREMENT_FOLDER_ID", folder.getId()); }
+      const name = String(p.fileName || "foto-persyaratan.jpg").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
+      const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+      return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:"Foto berhasil diunggah."});
+    }
+    const adminActions = ["getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
+    const participantActions = ["updateProfile","daftar","getMyApplications","cancelApplication","getMyCertificates"];
+    if (adminActions.indexOf(action) >= 0) { const auth = requireEventNevAdmin_(p); if (!auth.success) return jsonResponse(auth); p.adminEmail = auth.user.email; }
+    if (participantActions.indexOf(action) >= 0) { const auth = requireEventNevParticipant_(p); if (!auth.success) return jsonResponse(auth); p.userId = auth.user.id; p.email = auth.user.email; }
+    if (action === "absen") { const auth = requireEventNevAdmin_(p); if (!auth.success) return jsonResponse(auth); p.scannerUid = auth.user.id; }
+    let result;
+    switch (action) {
+      case "updateProfile": result = handleUpdateProfile(p); break;
+      case "getEvents": result = handleGetEvents(p); break;
+      case "getTrainers": result = handleGetTrainers(p); break;
+      case "getAlumniCount": result = handleAlumniCount(p); break;
+      case "daftar": result = handleDaftar(p); break;
+      case "getMyApplications": result = handleGetMyApplications(p); break;
+      case "cancelApplication": result = handleCancelApplication(p); break;
+      case "getMyCertificates": result = handleGetMyCertificates(p); break;
+      case "absen": result = handleAbsen(p); break;
+      case "getAllApplications": result = adminGetAllApplications(p); break;
+      case "getCertificates": result = adminGetCertificates_(p); break;
+      case "getUsers": result = adminGetUsers(p); break;
+      case "updateStatus": result = adminUpdateStatus(p); break;
+      case "deleteApp": result = adminDeleteApp(p); break;
+      case "getStats": result = adminGetStats(p); break;
+      case "addEvent": result = adminSaveRecord_("Events", p, "event"); break;
+      case "updateEvent": result = adminSaveRecord_("Events", p, "event"); break;
+      case "deleteEvent": result = adminDeleteEvent_(p); break;
+      case "addTrainer": result = adminSaveRecord_("Trainers", p, "trainer"); break;
+      case "updateTrainer": result = adminSaveRecord_("Trainers", p, "trainer"); break;
+      case "deleteTrainer": result = adminDeleteTrainer_(p); break;
+      default: result = {success:false,message:"Aksi tidak dikenal: " + action};
+    }
+    return jsonResponse(result);
+  } catch (err) { return jsonResponse({success:false,message:"Permintaan gagal: " + err.message}); }
 }
 
+function eventNevDigestHex_(value) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value), Utilities.Charset.UTF_8).map(function(b) { return ("0" + ((b + 256) % 256).toString(16)).slice(-2); }).join("");
+}
+function createEventNevSession_(user) {
+  const token = Utilities.getUuid().replace(/-/g,"") + Utilities.getUuid().replace(/-/g,"");
+  const session = {userId:String(user.id),email:String(user.email).toLowerCase()};
+  CacheService.getScriptCache().put("EVENTNEV_SESSION_" + eventNevDigestHex_(token), JSON.stringify(session), 21600);
+  return token;
+}
+function getEventNevSession_(p) {
+  const token = String((p && p.sessionToken) || ""); if (token.length < 40) return null;
+  const raw = CacheService.getScriptCache().get("EVENTNEV_SESSION_" + eventNevDigestHex_(token)); if (!raw) return null;
+  let saved; try { saved = JSON.parse(raw); } catch (ignore) { return null; }
+  const user = sheetToObjects(getSheet(SHEET.USERS)).find(u => String(u.id) === saved.userId && String(u.email || "").toLowerCase() === saved.email);
+  if (!user) return null;
+  return {id:user.id,nama:user.nama,email:user.email,noHp:user.noHp,jenis:user.jenis,poin:user.poin||0,role:String(user.jenis||"").toLowerCase()==="admin"?"admin":"peserta"};
+}
+function requireEventNevAdmin_(p) { const user = getEventNevSession_(p); return user && user.role === "admin" ? {success:true,user:user} : {success:false,message:"Sesi admin tidak valid atau kedaluwarsa. Silakan login kembali."}; }
+function requireEventNevParticipant_(p) { const user = getEventNevSession_(p); return user && user.role !== "admin" ? {success:true,user:user} : {success:false,message:"Sesi peserta tidak valid atau kedaluwarsa. Silakan login kembali."}; }
+function revokeEventNevSession_(token) { if (token) CacheService.getScriptCache().remove("EVENTNEV_SESSION_" + eventNevDigestHex_(token)); }
 function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
@@ -352,18 +377,12 @@ function handleLogin(p) {
   if (!user) return { success: false, message: "Email tidak terdaftar." };
   if (user.passwordHash !== hashPassword(password)) return { success: false, message: "Password salah." };
 
-  return {
-    success: true,
-    user: {
-      id: user.id,
-      nama: user.nama,
-      email: user.email,
-      noHp: user.noHp,
-      jenis: user.jenis,
-      poin: user.poin || 0,
-      role: user.jenis === "Admin" ? "admin" : "peserta",
-    }
+  const safeUser = {
+    id: user.id, nama: user.nama, email: user.email, noHp: user.noHp,
+    jenis: user.jenis, poin: user.poin || 0,
+    role: String(user.jenis || "").toLowerCase() === "admin" ? "admin" : "peserta"
   };
+  return { success: true, user: safeUser, sessionToken: createEventNevSession_(user) };
 }
 
 function handleRegister(p) {
