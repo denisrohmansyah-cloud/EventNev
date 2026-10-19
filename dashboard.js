@@ -82,12 +82,20 @@ function setNevLoading(active, message) {
 async function apiFetch(params) {
   setNevLoading(true, "Memuat data akun…");
   try {
-    const url = new URL(SCRIPT_URL);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    
-    const res = await fetch(url.toString());
+    const sessionToken = localStorage.getItem("nevSession") || "";
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...params, sessionToken })
+    });
     if (!res.ok) throw new Error("HTTP " + res.status);
-    return await res.json();
+    const result = await res.json();
+    if (result && result.success === false && /sesi peserta/i.test(String(result.message || ""))) {
+      localStorage.removeItem("nevSession");
+      localStorage.removeItem("nevUser");
+      window.location.href = "login.html";
+    }
+    return result;
   } finally {
     setNevLoading(false);
   }
