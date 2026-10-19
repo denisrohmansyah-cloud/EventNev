@@ -761,7 +761,7 @@ window.deleteTrainer = async function(id, name) {
 
 async function uploadAdminImage(file, kind) {
   const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Gagal membaca gambar.")); reader.readAsDataURL(file); });
-  const response = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "uploadAdminImage", kind, fileName: file.name, mimeType: file.type, base64: String(dataUrl).split(",")[1], adminEmail: (JSON.parse(localStorage.getItem("nevUser") || "{}").email || "") }) });
+  const response = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "uploadAdminImage", kind, fileName: file.name, mimeType: file.type, base64: String(dataUrl).split(",")[1], sessionToken: localStorage.getItem("nevSession") || "" }) });
   const result = await response.json();
   if (!result || !result.success || !result.url) throw new Error(result?.message || "Backend uploadAdminImage belum tersedia di Apps Script.");
   return result.url;
