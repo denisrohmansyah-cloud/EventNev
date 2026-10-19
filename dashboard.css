@@ -612,3 +612,30 @@
 .admin-app-detail-field strong { display:block; font-size:.9rem; overflow-wrap:anywhere; }
 .admin-app-modal-foot { position:sticky; bottom:0; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; padding:16px 24px; border-top:1px solid var(--dark-4); background:var(--dark-2); }
 @media(max-width:600px) { .admin-app-modal-backdrop { padding:10px; align-items:flex-end; } .admin-app-modal { max-height:90vh; border-radius:18px 18px 10px 10px; } .admin-app-modal-head,.admin-app-detail-grid { padding:16px; } .admin-app-detail-grid { grid-template-columns:minmax(0,1fr); gap:9px; } .admin-app-modal-foot { padding:13px 16px; } .admin-app-modal-foot button { flex:1; } }
+
+
+/* Admin applications: searchable, readable and mobile-friendly */
+.admin-applications-page { min-width:0; }
+.admin-app-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:18px 0 16px; }
+.admin-app-search { display:flex; align-items:center; gap:9px; flex:1 1 280px; min-width:0; min-height:42px; padding:0 13px; border:1px solid var(--dark-4); border-radius:11px; background:var(--dark-2); color:var(--text-dim); }
+.admin-app-search span { font-size:22px; line-height:1; }
+.admin-app-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--text); font:inherit; font-size:.9rem; }
+.admin-app-toolbar > select { min-height:42px; max-width:100%; }
+.admin-status-chip { display:inline-flex; align-items:center; margin-top:6px; padding:3px 8px; border-radius:999px; font-size:.72rem; font-weight:750; }
+.admin-status-chip.pending { color:#f5c66b; background:rgba(245,198,107,.12); }
+.admin-status-chip.approved { color:#63d99a; background:rgba(99,217,154,.12); }
+.admin-status-chip.rejected { color:#ff858b; background:rgba(255,91,103,.12); }
+.admin-app-empty { margin-top:12px; padding:20px; text-align:center; color:var(--text-dim); border:1px dashed var(--dark-4); border-radius:12px; }
+.admin-application-row[hidden] { display:none !important; }
+.admin-app-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.admin-app-actions .btn { white-space:nowrap; }
+.admin-applications-page .admin-table td { vertical-align:middle; }
+.admin-applications-page .admin-select { max-width:100%; min-width:125px; }
+@media(max-width:760px) {
+  .admin-app-toolbar { align-items:stretch; }
+  .admin-app-search { flex-basis:100%; }
+  .admin-app-toolbar > select { flex:1 1 150px; }
+  .admin-app-toolbar > button { flex:0 0 auto; }
+  .admin-applications-page .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .admin-applications-page .admin-table { min-width:760px; }
+}
