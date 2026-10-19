@@ -219,6 +219,7 @@ function doPost(e) {
       if (!b64 || b64.length > 7000000) return jsonResponse({success:false,message:"Ukuran gambar terlalu besar."});
       const bytes = Utilities.base64Decode(b64);
       if (bytes.length > 5 * 1024 * 1024) return jsonResponse({success:false,message:"Ukuran gambar maksimal 5 MB."});
+      if (!eventNevFileMatchesMime_(bytes, mime)) return jsonResponse({success:false,message:"Isi file tidak sesuai dengan format gambar yang dipilih."});
       const props = PropertiesService.getScriptProperties();
       const folderKey = "EVENTNEV_PUBLIC_IMAGES_FOLDER_ID";
       let folder = null;
@@ -242,6 +243,7 @@ function doPost(e) {
       if (!b64 || b64.length > 1400000) return jsonResponse({success:false,message:"Foto harus di bawah 1 MB setelah kompresi."});
       const bytes = Utilities.base64Decode(b64);
       if (bytes.length >= 1048576) return jsonResponse({success:false,message:"Foto harus di bawah 1 MB."});
+      if (!eventNevFileMatchesMime_(bytes, mime)) return jsonResponse({success:false,message:"Isi file tidak sesuai dengan format foto yang dipilih."});
       const props = PropertiesService.getScriptProperties(); let folder = null;
       const savedId = props.getProperty("EVENTNEV_REQUIREMENT_FOLDER_ID");
       if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
