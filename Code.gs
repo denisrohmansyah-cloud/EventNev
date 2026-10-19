@@ -207,6 +207,7 @@ function doPost(e) {
     if (action === "login") return jsonResponse(handleLogin(p));
     if (action === "register") return jsonResponse(handleRegister(p));
     if (action === "logout") { revokeEventNevSession_(p.sessionToken); return jsonResponse({success:true}); }
+    if (action === "getPrivateFile") return jsonResponse(handlePrivateFileRequest_(p));
     if (action === "uploadCertificate" || action === "uploadAdminImage") {
       const adminAuth = requireEventNevAdmin_(p);
       if (!adminAuth.success) return jsonResponse(adminAuth);
@@ -255,6 +256,7 @@ function doPost(e) {
       if (!folder) { folder = DriveApp.createFolder("EventNev - Foto Persyaratan Peserta"); props.setProperty("EVENTNEV_REQUIREMENT_FOLDER_ID", folder.getId()); }
       const name = String(p.fileName || "foto-persyaratan.jpg").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
       const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+      file.setDescription("EventNevRequirement:v1;userId=" + String(userAuth.user.id || "") + ";eventId=" + String(ev.id || ""));
       return jsonResponse({success:true,fileId:file.getId(),fileName:name,message:"Foto berhasil diunggah."});
     }
     const adminActions = ["getAllApplications","getCertificates","getUsers","updateStatus","deleteApp","getStats","getAuditLog","addEvent","updateEvent","deleteEvent","addTrainer","updateTrainer","deleteTrainer"];
@@ -290,6 +292,54 @@ function doPost(e) {
     }
     return jsonResponse(result);
   } catch (err) { return jsonResponse({success:false,message:"Permintaan gagal: " + err.message}); }
+}
+
+function eventNevValidateRequirementUpload_(fileId, userId, eventId) {
+  const id = String(fileId || "").trim();
+  if (!/^[a-zA-Z0-9_-]{20,}$/.test(id)) return false;
+  try {
+    const file = DriveApp.getFileById(id);
+    const description = String(file.getDescription() || "");
+    const expected = "EventNevRequirement:v1;userId=" + String(userId || "") + ";eventId=" + String(eventId || "");
+    return description === expected;
+  } catch (err) {
+    return false;
+  }
+}
+function eventNevExtractDriveFileId_(value) {
+  const match = String(value || "").match(/([a-zA-Z0-9_-]{20,})/);
+  return match ? match[1] : "";
+}
+
+/** Mengirim dokumen hanya jika tercatat pada sertifikat atau pendaftaran. */
+function handlePrivateFileRequest_(p) {
+  const sessionUser = getEventNevSession_(p);
+  if (!sessionUser) return { success:false, message:"Sesi tidak valid atau kedaluwarsa. Silakan login kembali." };
+  const fileId = String(p.fileId || "").trim();
+  if (!/^[a-zA-Z0-9_-]{20,}$/.test(fileId)) return { success:false, message:"Identitas file tidak valid." };
+  const isAdmin = sessionUser.role === "admin";
+  const userKeys = [String(sessionUser.id || "").trim().toLowerCase(), String(sessionUser.email || "").trim().toLowerCase()].filter(Boolean);
+  const certs = sheetToObjects(getSheet(SHEET.CERTIFICATES));
+  const apps = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  const certificateMatch = certs.some(function(cert) {
+    const storedUser = String(cert.userId || "").trim().toLowerCase();
+    return eventNevExtractDriveFileId_(cert.url) === fileId && (isAdmin || userKeys.indexOf(storedUser) >= 0);
+  });
+  const requirementMatch = apps.some(function(app) {
+    const storedUser = String(app.userId || "").trim().toLowerCase();
+    if (String(app.requirementFileId || "").trim() !== fileId || (!isAdmin && userKeys.indexOf(storedUser) < 0)) return false;
+    return eventNevValidateRequirementUpload_(fileId, String(app.userId || "").trim(), String(app.eventId || "").trim());
+  });
+  if (!certificateMatch && !requirementMatch) return { success:false, message:"Akses dokumen ditolak." };
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const bytes = blob.getBytes();
+    if (bytes.length > 6 * 1024 * 1024) return { success:false, message:"File terlalu besar untuk diunduh melalui portal. Hubungi Admin." };
+    return { success:true, fileName:String(file.getName() || "dokumen-eventnev").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,120), mimeType:String(blob.getContentType() || "application/octet-stream"), base64:Utilities.base64Encode(bytes) };
+  } catch (err) {
+    return { success:false, message:"Dokumen tidak tersedia atau tidak dapat diakses." };
+  }
 }
 
 function eventNevDigestHex_(value) {
@@ -499,6 +549,7 @@ function handleDaftar(p) {
   if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses pendaftaran lain. Coba kembali." };
   try {
   const sheet = getSheet(SHEET.APPLICATIONS);
+  eventNevEnsureHeaders_(sheet, ["requirementFileId", "requirementFileName"]);
   const apps = sheetToObjects(sheet);
   const existing = apps.find(a => String(a.userId) === String(userId) && String(a.eventId) === String(eventId));
   if (existing) {
@@ -529,6 +580,9 @@ function handleDaftar(p) {
   if (String(ev.persyaratanFoto || "").trim() && !requirementFileId) {
     return { success: false, message: "Foto persyaratan wajib diunggah sebelum mendaftar." };
   }
+  if (requirementFileId && !eventNevValidateRequirementUpload_(requirementFileId, userId, ev.id)) {
+    return { success: false, message: "Foto persyaratan tidak valid atau bukan milik akun ini untuk kegiatan tersebut. Unggah ulang foto persyaratan." };
+  }
   if (existing && ["cancelled", "dibatalkan"].includes(String(existing.status || "").trim().toLowerCase())) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
     const row = apps.findIndex(a => String(a.id) === String(existing.id)) + 2;
@@ -547,7 +601,9 @@ function handleDaftar(p) {
     return { success: true, message: "Pendaftaran berhasil dibuat kembali! Menunggu konfirmasi admin." };
   }
   const id = "APP_" + Date.now();
-  sheet.appendRow([id, userId, eventId, ev ? ev.nama : eventId, ev ? ev.kategori : "", new Date().toISOString(), "pending", "", requirementFileId || "", requirementFileName || ""]);
+  const record = {id:id,userId:userId,eventId:eventId,namaEvent:ev ? ev.nama : eventId,kategori:ev ? ev.kategori : "",tanggalDaftar:new Date().toISOString(),status:"pending",catatan:"",requirementFileId:requirementFileId || "",requirementFileName:requirementFileName || ""};
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  sheet.appendRow(headers.map(h => record[h] !== undefined ? record[h] : ""));
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
   } finally {
     lock.releaseLock();
@@ -740,8 +796,9 @@ function adminUploadCertificate_(p) {
 
   const cleanName = String(p.fileName || "sertifikat").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
   const file = folder.createFile(Utilities.newBlob(bytes, mime, cleanName));
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  const url = "https://drive.google.com/uc?export=download&id=" + file.getId();
+  // Sertifikat baru tetap privat di Drive dan hanya disajikan melalui endpoint terautentikasi.
+  // File lama yang pernah dibagikan publik perlu remediasi terpisah.
+  const url = "eventnev-private://" + file.getId();
 
   const sheet = getSheet(SHEET.CERTIFICATES);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
