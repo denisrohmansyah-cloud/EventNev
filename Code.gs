@@ -639,6 +639,17 @@ function adminGetCertificates_(p) {
   return sheetToObjects(getSheet(SHEET.CERTIFICATES)).filter(c => c.id);
 }
 
+function eventNevFileMatchesMime_(bytes, mime) {
+  if (!bytes || !bytes.length) return false;
+  const b = bytes.map(value => value & 255);
+  if (mime === "application/pdf") return b.length >= 5 && b[0] === 37 && b[1] === 80 && b[2] === 68 && b[3] === 70 && b[4] === 45;
+  if (mime === "image/jpeg") return b.length >= 3 && b[0] === 255 && b[1] === 216 && b[2] === 255;
+  if (mime === "image/png") return b.length >= 8 && b[0] === 137 && b[1] === 80 && b[2] === 78 && b[3] === 71 && b[4] === 13 && b[5] === 10 && b[6] === 26 && b[7] === 10;
+  if (mime === "image/gif") return b.length >= 6 && b[0] === 71 && b[1] === 73 && b[2] === 70 && b[3] === 56 && (b[4] === 55 || b[4] === 57) && b[5] === 97;
+  if (mime === "image/webp") return b.length >= 12 && b[0] === 82 && b[1] === 73 && b[2] === 70 && b[3] === 70 && b[8] === 87 && b[9] === 69 && b[10] === 66 && b[11] === 80;
+  return false;
+}
+
 function adminUploadCertificate_(p) {
   const email = String(p.adminEmail || "").trim().toLowerCase();
   if (!isEventNevAdmin_(email)) return { success: false, message: "Akses upload hanya untuk admin." };
@@ -656,6 +667,8 @@ function adminUploadCertificate_(p) {
   const user = users.find(u => String(u.id || "") === userId);
   if (!user) return { success: false, message: "Peserta tidak ditemukan. Muat ulang daftar peserta." };
   if (!eventId) return { success: false, message: "Pilih kegiatan terkait sertifikat." };
+  const event = sheetToObjects(getSheet(SHEET.EVENTS)).find(ev => String(ev.id || "") === eventId);
+  if (!event) return { success: false, message: "Kegiatan terkait sertifikat tidak ditemukan." };
 
   const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
   const attended = applications.some(a =>
@@ -678,6 +691,7 @@ function adminUploadCertificate_(p) {
   if (!b64 || b64.length > 9500000) return { success: false, message: "File kosong atau terlalu besar. Maksimal 6 MB." };
   const bytes = Utilities.base64Decode(b64);
   if (bytes.length > 6 * 1024 * 1024) return { success: false, message: "Ukuran file maksimal 6 MB." };
+  if (!eventNevFileMatchesMime_(bytes, mime)) return { success: false, message: "Isi file tidak sesuai dengan format yang dipilih. Unggah file yang valid." };
 
   const props = PropertiesService.getScriptProperties();
   const folderKey = "EVENTNEV_CERTIFICATES_FOLDER_ID";
@@ -699,7 +713,7 @@ function adminUploadCertificate_(p) {
   const record = {
     id: "CERT_" + Date.now(),
     userId: userId,
-    namaEvent: eventName,
+    namaEvent: String(event.nama || eventName),
     eventId: eventId,
     tanggal: String(p.tanggal || new Date().toISOString().slice(0, 10)),
     url: url
