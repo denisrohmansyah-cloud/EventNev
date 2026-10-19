@@ -130,12 +130,21 @@ function setNevLoading(active, message) {
 async function apiFetch(params) {
   setNevLoading(true, "Memproses permintaan…");
   try {
-    const url = new URL(SCRIPT_URL);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    
-    const res = await fetch(url.toString());
+    const sessionToken = localStorage.getItem("nevSession") || "";
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...params, sessionToken })
+    });
     if (!res.ok) throw new Error("Network error: " + res.status);
-    return await res.json();
+    const result = await res.json();
+    if (result && result.success === false && /sesi peserta/i.test(String(result.message || ""))) {
+      localStorage.removeItem("nevSession");
+      localStorage.removeItem("nevUser");
+      state.user = null;
+      updateAuthUI();
+    }
+    return result;
   } finally {
     setNevLoading(false);
   }
@@ -186,6 +195,9 @@ function updateAuthUI() {
 }
 
 function logout() {
+  const token = localStorage.getItem("nevSession") || "";
+  if (token) fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"logout",sessionToken:token}) }).catch(() => {});
+  localStorage.removeItem("nevSession");
   clearUser();
   updateAuthUI();
   renderMyApplications();
@@ -581,6 +593,7 @@ async function uploadRequirementPhoto(file, ev) {
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action: "uploadRequirementPhoto",
+      sessionToken: localStorage.getItem("nevSession") || "",
       userId: state.user.id || state.user.email,
       email: state.user.email || "",
       eventId: String(ev.id || ev.nama),
