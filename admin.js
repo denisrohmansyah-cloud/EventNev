@@ -301,7 +301,10 @@ function renderApplicationsTable() {
   const rows = adminState.applications.map(app => `
     <tr>
       <td>${sanitize(app.namaEvent || app.eventId || "—")}</td>
-      <td>${sanitize(app.userId)}</td>
+      <td>
+        <strong>${sanitize(app.namaPeserta || app.nama || "Nama belum tersedia")}</strong>
+        <div class="admin-app-subtext">${sanitize(app.emailPeserta || "Email belum tersedia")}</div>
+      </td>
       <td>${formatDate(app.tanggalDaftar)}</td>
       <td>
         <select class="admin-select" data-app-id="${sanitize(String(app.id))}" onchange="updateAppStatus(this)">
@@ -311,7 +314,8 @@ function renderApplicationsTable() {
           <option value="hadir" ${app.status === "hadir" ? "selected" : ""}>Hadir</option>
         </select>
       </td>
-      <td>
+      <td class="admin-app-actions">
+        <button class="btn btn-outline admin-btn-sm" onclick="viewApplicantDetails('${sanitize(String(app.id))}')">Data diri</button>
         <button class="btn btn-outline admin-btn-sm" onclick="deleteApp('${sanitize(String(app.id))}')">Hapus</button>
       </td>
     </tr>
@@ -320,12 +324,13 @@ function renderApplicationsTable() {
   setContent(`
     <div>
       <div class="db-section-title">Manajemen Pendaftaran (${adminState.applications.length})</div>
+      <p class="admin-app-help">Periksa data diri peserta melalui tombol Data diri sebelum menyetujui atau menolak pendaftaran.</p>
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
               <th>Event</th>
-              <th>User ID</th>
+              <th>Nama Peserta</th>
               <th>Tgl Daftar</th>
               <th>Status</th>
               <th>Aksi</th>
@@ -337,6 +342,50 @@ function renderApplicationsTable() {
     </div>
   `);
 }
+
+window.viewApplicantDetails = function(appId) {
+  const app = adminState.applications.find(item => String(item.id) === String(appId));
+  if (!app) { toast("Data pendaftaran tidak ditemukan.", "error"); return; }
+  const field = (label, value) => `<div class="admin-app-detail-field"><span>${sanitize(label)}</span><strong>${sanitize(value || "Belum diisi")}</strong></div>`;
+  const existing = document.getElementById("adminApplicantModal");
+  existing?.remove();
+  const modal = document.createElement("div");
+  modal.id = "adminApplicantModal";
+  modal.className = "admin-app-modal-backdrop";
+  modal.innerHTML = `
+    <section class="admin-app-modal" role="dialog" aria-modal="true" aria-labelledby="adminApplicantTitle">
+      <header class="admin-app-modal-head"><div><h3 id="adminApplicantTitle">Data Diri Peserta</h3><p>Periksa informasi berikut sebelum mengambil keputusan.</p></div><button type="button" class="admin-app-modal-close" aria-label="Tutup" onclick="document.getElementById('adminApplicantModal')?.remove()">×</button></header>
+      <div class="admin-app-detail-grid">
+        ${field("Nama lengkap", app.namaPeserta || app.nama)}
+        ${field("Email", app.emailPeserta)}
+        ${field("Nomor WhatsApp", app.noHpPeserta)}
+        ${field("Jenis akun", app.jenisPeserta)}
+        ${field("Kegiatan", app.namaEvent || app.eventId)}
+        ${field("Tanggal daftar", formatDate(app.tanggalDaftar))}
+        ${field("Status pendaftaran", ({pending:"Menunggu",approved:"Disetujui",rejected:"Ditolak",hadir:"Hadir"})[String(app.status || "").toLowerCase()] || app.status)}
+        ${field("Catatan peserta", app.catatan)}
+      </div>
+      <footer class="admin-app-modal-foot">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('adminApplicantModal')?.remove()">Tutup</button>
+        ${String(app.status || "pending").toLowerCase() === "pending" || String(app.status || "pending").toLowerCase() === "menunggu" ? `<button type="button" class="btn btn-primary" onclick="document.getElementById('adminApplicantModal')?.remove();setApplicationStatus('${sanitize(String(app.id))}','approved')">Setujui</button><button type="button" class="btn btn-outline" onclick="document.getElementById('adminApplicantModal')?.remove();setApplicationStatus('${sanitize(String(app.id))}','rejected')">Tolak</button>` : ""}
+      </footer>
+    </section>`;
+  modal.addEventListener("click", event => { if (event.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+};
+
+window.setApplicationStatus = async function(appId, status) {
+  const label = status === "approved" ? "menyetujui" : "menolak";
+  if (!confirm("Yakin ingin " + label + " pendaftaran ini?")) return;
+  try {
+    const result = await apiFetch({ action: "updateStatus", appId, status });
+    if (!result || !result.success) { toast(result?.message || "Status gagal diperbarui.", "error"); return; }
+    toast(status === "approved" ? "Pendaftaran disetujui." : "Pendaftaran ditolak.", "success");
+    await renderApplications();
+  } catch {
+    toast("Gagal terhubung ke server.", "error");
+  }
+};
 
 window.updateAppStatus = async function(select) {
   const appId = select.dataset.appId;
