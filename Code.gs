@@ -628,8 +628,21 @@ function adminUploadCertificate_(p) {
 }
 
 function adminGetAllApplications(p) {
-  const sheet = getSheet(SHEET.APPLICATIONS);
-  return sheetToObjects(sheet).filter(a => a.id);
+  const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS)).filter(a => a.id);
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  return applications.map(app => {
+    const user = users.find(u =>
+      String(u.id || "") === String(app.userId || "") ||
+      String(u.email || "").toLowerCase() === String(app.userId || "").toLowerCase()
+    );
+    return {
+      ...app,
+      namaPeserta: user ? (user.nama || "") : "",
+      emailPeserta: user ? (user.email || "") : "",
+      noHpPeserta: user ? (user.noHp || "") : "",
+      jenisPeserta: user ? (user.jenis || "") : ""
+    };
+  });
 }
 
 function adminGetUsers(p) {
