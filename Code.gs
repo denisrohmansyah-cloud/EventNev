@@ -825,9 +825,11 @@ function adminDeleteEvent_(p) {
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idIndex]) !== eventId) continue;
     const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
-    const hasHistory = applications.some(a => String(a.eventId || "") === eventId);
-    if (hasHistory) {
-      return { success: false, message: "Event memiliki riwayat pendaftaran. Nonaktifkan event melalui status agar riwayat peserta tetap terjaga." };
+    const certificates = sheetToObjects(getSheet(SHEET.CERTIFICATES));
+    const hasApplications = applications.some(a => String(a.eventId || "") === eventId);
+    const hasCertificates = certificates.some(cert => String(cert.eventId || "") === eventId);
+    if (hasApplications || hasCertificates) {
+      return { success: false, message: "Event memiliki riwayat pendaftaran atau sertifikat. Nonaktifkan event melalui status agar riwayat tetap terjaga." };
     }
     sheet.deleteRow(i + 1);
     return { success: true, message: 'Event berhasil dihapus.' };
