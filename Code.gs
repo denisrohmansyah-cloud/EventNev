@@ -211,7 +211,11 @@ function doPost(e) {
       const adminAuth = requireEventNevAdmin_(p);
       if (!adminAuth.success) return jsonResponse(adminAuth);
       p.adminEmail = adminAuth.user.email;
-      if (action === "uploadCertificate") return jsonResponse(adminUploadCertificate_(p));
+      if (action === "uploadCertificate") {
+        const certificateResult = adminUploadCertificate_(p);
+        if (certificateResult && certificateResult.success) eventNevAuditLog_(p.adminEmail, "certificate_uploaded", String(p.eventId || ""), "Sertifikat diunggah untuk peserta " + String(p.userId || ""));
+        return jsonResponse(certificateResult);
+      }
       if (["event","trainer"].indexOf(String(p.kind || "")) < 0) return jsonResponse({success:false,message:"Jenis gambar tidak valid."});
       const mime = String(p.mimeType || "");
       if (["image/jpeg","image/png","image/webp"].indexOf(mime) < 0) return jsonResponse({success:false,message:"Gunakan gambar JPG, PNG, atau WEBP."});
@@ -229,6 +233,7 @@ function doPost(e) {
       const cleanName = String(p.fileName || "eventnev-image").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
       const file = folder.createFile(Utilities.newBlob(bytes, mime, cleanName));
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      eventNevAuditLog_(p.adminEmail, "image_uploaded", String(p.kind || ""), "Gambar admin diunggah: " + cleanName);
       return jsonResponse({success:true,url:"https://drive.google.com/uc?export=view&id="+file.getId(),fileId:file.getId(),message:"Gambar berhasil diunggah."});
     }
     if (action === "uploadRequirementPhoto") {
