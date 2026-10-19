@@ -521,27 +521,34 @@ function handleDaftar(p) {
 
 function handleCancelApplication(p) {
   const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
   const applicationId = String(p.applicationId || "").trim();
-  if (!userId || !applicationId) return { success: false, message: "Data pembatalan tidak lengkap." };
-  const sheet = getSheet(SHEET.APPLICATIONS);
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { success: false, message: "Pendaftaran tidak ditemukan." };
-  const headers = values[0].map(h => String(h).trim());
-  const idCol = headers.indexOf("id");
-  const userCol = headers.indexOf("userId");
-  const statusCol = headers.indexOf("status");
-  if (idCol < 0 || userCol < 0 || statusCol < 0) throw new Error("Kolom Applications tidak lengkap.");
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][idCol]) !== applicationId) continue;
-    if (String(values[i][userCol]) !== userId) return { success: false, message: "Kamu tidak berhak membatalkan pendaftaran ini." };
-    const status = String(values[i][statusCol] || "pending").trim().toLowerCase();
-    if (status === "cancelled" || status === "dibatalkan") return { success: false, message: "Pendaftaran ini sudah dibatalkan." };
-    if (status !== "pending" && status !== "menunggu") return { success: false, message: "Pendaftaran hanya dapat dibatalkan saat masih menunggu konfirmasi." };
-    sheet.getRange(i + 1, statusCol + 1).setValue("cancelled");
-    SpreadsheetApp.flush();
-    return { success: true, message: "Pendaftaran berhasil dibatalkan." };
+  if ((!userId && !email) || !applicationId) return { success: false, message: "Data pembatalan tidak lengkap." };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses perubahan lain. Coba kembali." };
+  try {
+    const sheet = getSheet(SHEET.APPLICATIONS);
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return { success: false, message: "Pendaftaran tidak ditemukan." };
+    const headers = values[0].map(h => String(h).trim());
+    const idCol = headers.indexOf("id"), userCol = headers.indexOf("userId"), statusCol = headers.indexOf("status");
+    if (idCol < 0 || userCol < 0 || statusCol < 0) throw new Error("Kolom Applications tidak lengkap.");
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][idCol]) !== applicationId) continue;
+      const storedUser = String(values[i][userCol] || "").trim();
+      const ownsApplication = (userId && storedUser === userId) || (email && storedUser.toLowerCase() === email);
+      if (!ownsApplication) return { success: false, message: "Kamu tidak berhak membatalkan pendaftaran ini." };
+      const status = String(values[i][statusCol] || "pending").trim().toLowerCase();
+      if (status === "cancelled" || status === "dibatalkan") return { success: false, message: "Pendaftaran ini sudah dibatalkan." };
+      if (status !== "pending" && status !== "menunggu") return { success: false, message: "Pendaftaran hanya dapat dibatalkan saat masih menunggu konfirmasi." };
+      sheet.getRange(i + 1, statusCol + 1).setValue("cancelled");
+      SpreadsheetApp.flush();
+      return { success: true, message: "Pendaftaran berhasil dibatalkan." };
+    }
+    return { success: false, message: "Pendaftaran tidak ditemukan." };
+  } finally {
+    lock.releaseLock();
   }
-  return { success: false, message: "Pendaftaran tidak ditemukan." };
 }
 
 function handleGetMyApplications(p) {
