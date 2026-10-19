@@ -813,16 +813,20 @@ function adminGetStats() {
   const userCount = getSheet(SHEET.USERS).getLastRow() - 1;
   const eventCount = getSheet(SHEET.EVENTS).getLastRow() - 1;
   const appCount = getSheet(SHEET.APPLICATIONS).getLastRow() - 1;
-
-  const appSheet = getSheet(SHEET.APPLICATIONS);
-  const apps = sheetToObjects(appSheet);
-  const approved = apps.filter(a => /approved|disetujui|hadir/i.test(a.status || "")).length;
+  const apps = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  const approved = apps.filter(a => /^(approved|disetujui|hadir)$/i.test(String(a.status || "").trim())).length;
+  const pending = apps.filter(a => /^(pending|menunggu|)$/i.test(String(a.status || "").trim())).length;
+  const attended = apps.filter(a => /^hadir$/i.test(String(a.status || "").trim())).length;
+  const rejected = apps.filter(a => /^(rejected|ditolak)$/i.test(String(a.status || "").trim())).length;
 
   return {
     users: Math.max(userCount, 0),
     events: Math.max(eventCount, 0),
     applications: Math.max(appCount, 0),
     approved,
+    pending,
+    attended,
+    rejected
   };
 }
 
