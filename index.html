@@ -307,7 +307,10 @@
 
 <!-- ===== SCANNER OVERLAY ===== -->
 <div class="scanner-overlay" id="scannerOverlay" hidden>
-  <p style="color:#fff; font-weight:600;">Arahkan kamera ke QR Code</p>
+  <p style="color:#fff; font-weight:600;">Presensi Admin</p>
+  <label for="scannerEventSelect" style="color:#fff;">Kegiatan</label>
+  <select id="scannerEventSelect" aria-label="Pilih kegiatan untuk presensi" style="max-width:320px;width:90%;padding:10px;border-radius:8px;"></select>
+  <p style="color:#fff; font-weight:600;">Arahkan kamera ke QR peserta</p>
   <video id="scannerVideo" playsinline autoplay muted></video>
   <canvas id="scannerCanvas" hidden></canvas>
   <p id="scannerResult" style="color:#fff; font-size:.9rem; text-align:center; max-width:300px;"></p>
