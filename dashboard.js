@@ -403,11 +403,22 @@ function buildAppCard(app) {
   const s = String(app.status || "pending").toLowerCase();
   const info = statusMap[s] || { text: sanitize(app.status || "—"), cls: "badge-openlab" };
   const canCancel = ["pending", "menunggu"].includes(s) && app.id;
+  const timelineStatus = ["cancelled","dibatalkan"].includes(s) ? "cancelled" : (["rejected","ditolak"].includes(s) ? "rejected" : (["hadir"].includes(s) ? "attended" : (["approved","disetujui"].includes(s) ? "approved" : "pending")));
+  const timeline = [
+    {key:"pending",label:"Terdaftar"},
+    {key:"approved",label:"Verifikasi"},
+    {key:"attended",label:"Kehadiran"},
+    {key:"certificate",label:"Sertifikat"}
+  ];
+  const timelineIndex = timelineStatus === "attended" ? 2 : (timelineStatus === "approved" ? 1 : 0);
+  const timelineHtml = timelineStatus === "rejected" || timelineStatus === "cancelled"
+    ? '<div class="nev-app-timeline nev-app-timeline-end"><span>' + (timelineStatus === "rejected" ? "Pendaftaran ditolak" : "Pendaftaran dibatalkan") + '</span></div>'
+    : '<ol class="nev-app-timeline" aria-label="Tahapan pendaftaran">' + timeline.map((step, index) => '<li class="' + (index < timelineIndex ? "done" : (index === timelineIndex ? "current" : "")) + '"><span class="nev-timeline-dot" aria-hidden="true"></span><span>' + step.label + '</span></li>').join("") + '</ol>';
   const searchable = String((app.namaEvent || "") + " " + (app.eventId || "") + " " + (app.kategori || "")).toLowerCase();
   const filterStatus = ["menunggu", ""].includes(s) ? "pending" : (["disetujui"].includes(s) ? "approved" : (["dibatalkan"].includes(s) ? "cancelled" : s));
   return '<div class="db-app-card" data-search="' + sanitize(searchable) + '" data-status="' + sanitize(filterStatus) + '"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
     (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\'' + sanitize(app.id) + '\')">Batalkan pendaftaran</button>' : "") +
-    '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div></div>';
+    '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div>' + timelineHtml + '</div>';
 }
 
 async function cancelMyApplication(applicationId) {
