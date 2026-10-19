@@ -431,29 +431,39 @@ function handleRegister(p) {
 }
 
 function handleUpdateProfile(p) {
-  const { userId, nama, noHp } = p;
-  if (!userId || !nama) return { success: false, message: "Data tidak lengkap." };
+  const userId = String(p.userId || "").trim();
+  const nama = String(p.nama || "").trim().replace(/\\s+/g, " ");
+  const noHp = String(p.noHp || "").trim();
+  if (!userId || !nama) return { success: false, message: "Nama lengkap wajib diisi." };
+  if (nama.length > 120) return { success: false, message: "Nama maksimal 120 karakter." };
+  if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
+  if (/[<>]/.test(nama)) return { success: false, message: "Nama mengandung karakter yang tidak diperbolehkan." };
 
   const sheet = getSheet(SHEET.USERS);
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const idIdx = headers.indexOf("id");
-  const namaIdx = headers.indexOf("nama");
-  const noHpIdx = headers.indexOf("noHp");
+  if (data.length < 2) return { success: false, message: "Akun tidak ditemukan." };
+  const headers = data[0].map(h => String(h).trim());
+  const idIdx = headers.indexOf("id"), emailIdx = headers.indexOf("email");
+  const namaIdx = headers.indexOf("nama"), noHpIdx = headers.indexOf("noHp");
+  if (namaIdx < 0 || (idIdx < 0 && emailIdx < 0)) return { success: false, message: "Kolom profil tidak lengkap." };
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idIdx] === userId || data[i][headers.indexOf("email")] === userId) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Profil sedang diperbarui. Coba kembali." };
+  try {
+    for (let i = 1; i < data.length; i++) {
+      const matchesId = idIdx >= 0 && String(data[i][idIdx] || "") === userId;
+      const matchesEmail = emailIdx >= 0 && String(data[i][emailIdx] || "").toLowerCase() === userId.toLowerCase();
+      if (!matchesId && !matchesEmail) continue;
       sheet.getRange(i + 1, namaIdx + 1).setValue(nama);
-      if (noHpIdx >= 0) sheet.getRange(i + 1, noHpIdx + 1).setValue(noHp || "");
-      return { success: true };
+      if (noHpIdx >= 0) sheet.getRange(i + 1, noHpIdx + 1).setValue(noHp);
+      SpreadsheetApp.flush();
+      return { success: true, message: "Profil berhasil diperbarui.", nama: nama, noHp: noHp };
     }
+    return { success: false, message: "Akun tidak ditemukan." };
+  } finally {
+    lock.releaseLock();
   }
-  return { success: false, message: "User tidak ditemukan." };
 }
-
-/* =========================================================
-   EVENTS
-   ========================================================= */
 function handleGetEvents() {
   const sheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(sheet);
