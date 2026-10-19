@@ -780,6 +780,11 @@ function initSidebar() {
 function initLogout() {
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
     if (confirm("Keluar?")) {
+      const token = localStorage.getItem("nevSession") || "";
+      if (token) {
+        fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"logout",sessionToken:token}) }).catch(() => {});
+      }
+      localStorage.removeItem("nevSession");
       localStorage.removeItem("nevUser");
       window.location.href = "login.html?role=admin&v=20261018-2";
     }
