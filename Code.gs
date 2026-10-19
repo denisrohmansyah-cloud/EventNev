@@ -322,7 +322,8 @@ function handlePrivateFileRequest_(p) {
   });
   const requirementMatch = apps.some(function(app) {
     const storedUser = String(app.userId || "").trim().toLowerCase();
-    return String(app.requirementFileId || "").trim() === fileId && (isAdmin || userKeys.indexOf(storedUser) >= 0);
+    if (String(app.requirementFileId || "").trim() !== fileId || (!isAdmin && userKeys.indexOf(storedUser) < 0)) return false;
+    return eventNevValidateRequirementUpload_(fileId, String(app.userId || "").trim(), String(app.eventId || "").trim());
   });
   if (!certificateMatch && !requirementMatch) return { success:false, message:"Akses dokumen ditolak." };
   try {
