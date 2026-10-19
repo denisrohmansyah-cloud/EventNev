@@ -594,3 +594,21 @@
  .admin-cert-actions button { width:100%; }
  .admin-cert-heading { gap:10px; }
 }
+
+
+/* Applicant review modal */
+.admin-app-subtext { margin-top:4px; color:var(--text-dim); font-size:.78rem; overflow-wrap:anywhere; }
+.admin-app-help { margin:-6px 0 18px; color:var(--text-dim); font-size:.88rem; }
+.admin-app-actions { display:flex; flex-wrap:wrap; gap:8px; min-width:155px; }
+.admin-app-modal-backdrop { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(0,0,0,.72); backdrop-filter:blur(5px); }
+.admin-app-modal { width:min(680px,100%); max-height:min(85vh,820px); overflow:auto; border:1px solid var(--dark-4); border-radius:18px; background:var(--dark-2); box-shadow:0 24px 80px rgba(0,0,0,.45); }
+.admin-app-modal-head { position:sticky; top:0; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 24px; background:var(--dark-2); border-bottom:1px solid var(--dark-4); }
+.admin-app-modal-head h3 { margin:0; font-size:1.15rem; }
+.admin-app-modal-head p { margin:7px 0 0; color:var(--text-dim); font-size:.86rem; }
+.admin-app-modal-close { flex-shrink:0; width:36px; height:36px; border:1px solid var(--dark-4); border-radius:10px; background:var(--dark-3); color:var(--text); font-size:24px; cursor:pointer; }
+.admin-app-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:22px 24px; }
+.admin-app-detail-field { min-width:0; padding:12px 14px; border:1px solid var(--dark-4); border-radius:12px; background:rgba(255,255,255,.02); }
+.admin-app-detail-field span { display:block; margin-bottom:6px; color:var(--text-dim); font-size:.75rem; }
+.admin-app-detail-field strong { display:block; font-size:.9rem; overflow-wrap:anywhere; }
+.admin-app-modal-foot { position:sticky; bottom:0; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; padding:16px 24px; border-top:1px solid var(--dark-4); background:var(--dark-2); }
+@media(max-width:600px) { .admin-app-modal-backdrop { padding:10px; align-items:flex-end; } .admin-app-modal { max-height:90vh; border-radius:18px 18px 10px 10px; } .admin-app-modal-head,.admin-app-detail-grid { padding:16px; } .admin-app-detail-grid { grid-template-columns:minmax(0,1fr); gap:9px; } .admin-app-modal-foot { padding:13px 16px; } .admin-app-modal-foot button { flex:1; } }
