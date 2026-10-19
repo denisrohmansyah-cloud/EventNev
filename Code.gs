@@ -640,7 +640,13 @@ function adminGetAllApplications(p) {
       namaPeserta: user ? (user.nama || "") : "",
       emailPeserta: user ? (user.email || "") : "",
       noHpPeserta: user ? (user.noHp || "") : "",
-      jenisPeserta: user ? (user.jenis || "") : ""
+      jenisPeserta: user ? (user.jenis || "") : "",
+      nimPeserta: user ? (user.nim || user.NIM || user.nimNis || "") : "",
+      universitasPeserta: user ? (user.asalUniversitas || user.universitas || user.institusi || user.asalSekolah || "") : "",
+      fakultasPeserta: user ? (user.fakultas || "") : "",
+      prodiPeserta: user ? (user.programStudi || user.prodi || user.jurusan || "") : "",
+      angkatanPeserta: user ? (user.angkatan || user.tahunMasuk || "") : "",
+      alamatPeserta: user ? (user.alamat || "") : ""
     };
   });
 }
