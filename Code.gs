@@ -545,19 +545,25 @@ function handleCancelApplication(p) {
 }
 
 function handleGetMyApplications(p) {
-  const { userId } = p;
-  if (!userId) return [];
-  const sheet = getSheet(SHEET.APPLICATIONS);
-  const apps = sheetToObjects(sheet);
-  return apps.filter(a => String(a.userId) === String(userId));
+  const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
+  if (!userId && !email) return [];
+  const apps = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  return apps.filter(app => {
+    const storedId = String(app.userId || "").trim();
+    return (userId && storedId === userId) || (email && storedId.toLowerCase() === email);
+  });
 }
 
 function handleGetMyCertificates(p) {
-  const { userId } = p;
-  if (!userId) return [];
-  const sheet = getSheet(SHEET.CERTIFICATES);
-  const certs = sheetToObjects(sheet);
-  return certs.filter(c => String(c.userId) === String(userId));
+  const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
+  if (!userId && !email) return [];
+  const certs = sheetToObjects(getSheet(SHEET.CERTIFICATES));
+  return certs.filter(cert => {
+    const storedId = String(cert.userId || "").trim();
+    return (userId && storedId === userId) || (email && storedId.toLowerCase() === email);
+  });
 }
 
 /* =========================================================
