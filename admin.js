@@ -122,6 +122,7 @@ function renderView() {
     case "users":        renderUsers(); break;
     case "trainers":     renderTrainers(); break;
     case "certificates": renderCertificates(); break;
+    case "audit": renderAuditLog(); break;
   }
 }
 
@@ -347,6 +348,7 @@ function renderApplicationsTable() {
         <select id="adminApplicationStatusFilter" class="admin-select" onchange="filterAdminApplications()" aria-label="Filter status">
           <option value="all">Semua status</option><option value="pending">Menunggu</option><option value="approved">Disetujui</option><option value="rejected">Ditolak</option>
         </select>
+        <button class="btn btn-outline admin-btn-sm" onclick="exportVisibleApplicationsCsv()">⇩ Ekspor CSV</button>
         <button class="btn btn-outline admin-btn-sm" onclick="renderApplications()">↻ Perbarui</button>
       </div>
       <div class="table-wrap">
@@ -359,6 +361,56 @@ function renderApplicationsTable() {
     </div>
   `);
   filterAdminApplications();
+}
+
+
+window.exportVisibleApplicationsCsv = function() {
+  const rows = adminState.applications.filter(app => {
+    const row = Array.from(document.querySelectorAll("#adminApplicationsBody .admin-application-row"))
+      .find(el => el.querySelector("[data-app-id]")?.dataset.appId === String(app.id));
+    return row && !row.hidden;
+  });
+  if (!rows.length) { toast("Tidak ada data yang cocok untuk diekspor.", "error"); return; }
+  const columns = [
+    ["Event", a => a.namaEvent || a.eventId],
+    ["Nama Peserta", a => a.namaPeserta || a.nama],
+    ["Email", a => a.emailPeserta],
+    ["NIM/NIS", a => a.nimPeserta],
+    ["Asal Institusi", a => a.universitasPeserta],
+    ["Tanggal Daftar", a => a.tanggalDaftar],
+    ["Status", a => a.status]
+  ];
+  const cell = value => {
+    let text = String(value == null ? "" : value);
+    if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
+  const csv = [columns.map(c => cell(c[0])).join(","), ...rows.map(a => columns.map(c => cell(c[1](a))).join(","))].join("\r\n");
+  const blob = new Blob(["\uFEFF", csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "eventnev-peserta-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("CSV berhasil disiapkan.", "success");
+};
+
+async function renderAuditLog() {
+  setContent('<div class="db-loading">Memuat riwayat aktivitas…</div>');
+  try {
+    const rows = await apiFetch({action:"getAuditLog"});
+    const logs = Array.isArray(rows) ? rows : [];
+    const safe = value => sanitize(value == null ? "" : String(value));
+    const body = logs.map(item => {
+      let timestamp = item.timestamp || "";
+      try { timestamp = new Date(timestamp).toLocaleString("id-ID", {dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Jakarta"}); } catch (e) {}
+      return '<tr><td data-label="Waktu">' + safe(timestamp || "—") + '</td><td data-label="Admin">' + safe(item.actor || "—") + '</td><td data-label="Aktivitas">' + safe(item.action || "—") + '</td><td data-label="Target">' + safe(item.target || "—") + '</td><td data-label="Detail">' + safe(item.details || "—") + '</td></tr>';
+    }).join("");
+    setContent('<section><div class="db-section-title">Riwayat Aktivitas</div><p class="admin-app-help">Maksimal 100 aktivitas terbaru yang tercatat setelah fitur audit diaktifkan. Aktivitas lama tidak dibuat secara retroaktif.</p><div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-outline admin-btn-sm" onclick="renderAuditLog()">↻ Perbarui</button></div><div class="table-wrap"><table class="admin-table"><thead><tr><th>Waktu</th><th>Admin</th><th>Aktivitas</th><th>Target</th><th>Detail</th></tr></thead><tbody>' + (body || '<tr><td colspan="5" style="text-align:center;padding:28px">Belum ada aktivitas yang tercatat.</td></tr>') + '</tbody></table></div></section>');
+  } catch (err) {
+    setContent('<section><div class="db-section-title">Riwayat Aktivitas</div><p>Riwayat belum dapat dimuat. Periksa koneksi dan sesi admin.</p><button class="btn btn-outline admin-btn-sm" onclick="renderAuditLog()">Coba lagi</button></section>');
+  }
 }
 
 window.filterAdminApplications = function() {
