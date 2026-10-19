@@ -299,49 +299,73 @@ async function renderApplications() {
 }
 
 function renderApplicationsTable() {
-  const rows = adminState.applications.map(app => `
-    <tr>
-      <td>${sanitize(app.namaEvent || app.eventId || "—")}</td>
-      <td>
+  const pendingCount = adminState.applications.filter(app => ["pending", "menunggu", ""].includes(String(app.status || "pending").toLowerCase())).length;
+  const rows = adminState.applications.map(app => {
+    const status = String(app.status || "pending").toLowerCase();
+    const statusLabel = ({pending:"Menunggu",menunggu:"Menunggu",approved:"Disetujui",rejected:"Ditolak"})[status] || status;
+    const statusClass = status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending";
+    const searchable = [app.namaEvent,app.eventId,app.namaPeserta,app.nama,app.emailPeserta,app.userId,app.nimPeserta,app.universitasPeserta].join(" ").toLowerCase();
+    return `
+    <tr class="admin-application-row" data-status="${sanitize(status)}" data-search="${sanitize(searchable)}">
+      <td data-label="Event">${sanitize(app.namaEvent || app.eventId || "—")}</td>
+      <td data-label="Nama Peserta">
         <strong>${sanitize(app.namaPeserta || app.nama || "Nama belum tersedia")}</strong>
         <div class="admin-app-subtext">${sanitize(app.emailPeserta || "Email belum tersedia")}</div>
       </td>
-      <td>${formatDate(app.tanggalDaftar)}</td>
-      <td>
-        <select class="admin-select" data-app-id="${sanitize(String(app.id))}" onchange="updateAppStatus(this)">
-          <option value="pending" ${app.status === "pending" ? "selected" : ""}>Menunggu</option>
-          <option value="approved" ${app.status === "approved" ? "selected" : ""}>Setujui</option>
-          <option value="rejected" ${app.status === "rejected" ? "selected" : ""}>Tolak</option>
+      <td data-label="Tgl Daftar">${formatDate(app.tanggalDaftar)}</td>
+      <td data-label="Status">
+        <select class="admin-select" data-app-id="${sanitize(String(app.id))}" data-original-status="${sanitize(status)}" onchange="updateAppStatus(this)" aria-label="Status pendaftaran ${sanitize(app.namaPeserta || app.id)}">
+          <option value="pending" ${["pending","menunggu",""].includes(status) ? "selected" : ""}>Menunggu</option>
+          <option value="approved" ${status === "approved" ? "selected" : ""}>Disetujui</option>
+          <option value="rejected" ${status === "rejected" ? "selected" : ""}>Ditolak</option>
         </select>
+        <span class="admin-status-chip ${statusClass}">${sanitize(statusLabel)}</span>
       </td>
-      <td class="admin-app-actions">
+      <td data-label="Aksi" class="admin-app-actions">
         <button class="btn btn-outline admin-btn-sm" onclick="viewApplicantDetails('${sanitize(String(app.id))}')">Data diri</button>
         <button class="btn btn-outline admin-btn-sm" onclick="deleteApp('${sanitize(String(app.id))}')">Hapus</button>
       </td>
-    </tr>
-  `).join("") || `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px;">Belum ada pendaftaran.</td></tr>`;
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:32px;">Belum ada pendaftaran.</td></tr>`;
 
   setContent(`
-    <div>
+    <div class="admin-applications-page">
       <div class="db-section-title">Manajemen Pendaftaran (${adminState.applications.length})</div>
-      <p class="admin-app-help">Periksa data diri peserta melalui tombol Data diri sebelum menyetujui atau menolak pendaftaran.</p>
+      <p class="admin-app-help">Ada <strong>${pendingCount}</strong> pendaftaran yang menunggu keputusan. Periksa data diri peserta sebelum menyetujui atau menolak.</p>
+      <div class="admin-app-toolbar">
+        <label class="admin-app-search"><span aria-hidden="true">⌕</span><input id="adminApplicationSearch" type="search" placeholder="Cari nama, email, NIM, atau kegiatan…" oninput="filterAdminApplications()" autocomplete="off"></label>
+        <select id="adminApplicationStatusFilter" class="admin-select" onchange="filterAdminApplications()" aria-label="Filter status">
+          <option value="all">Semua status</option><option value="pending">Menunggu</option><option value="approved">Disetujui</option><option value="rejected">Ditolak</option>
+        </select>
+        <button class="btn btn-outline admin-btn-sm" onclick="renderApplications()">↻ Perbarui</button>
+      </div>
       <div class="table-wrap">
         <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Event</th>
-              <th>Nama Peserta</th>
-              <th>Tgl Daftar</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
+          <thead><tr><th>Event</th><th>Nama Peserta</th><th>Tgl Daftar</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="adminApplicationsBody">${rows}</tbody>
         </table>
       </div>
+      <p id="adminApplicationsEmpty" class="admin-app-empty" hidden>Tidak ada pendaftaran yang cocok dengan pencarian.</p>
     </div>
   `);
+  filterAdminApplications();
 }
+
+window.filterAdminApplications = function() {
+  const query = String(document.getElementById("adminApplicationSearch")?.value || "").trim().toLowerCase();
+  const filter = String(document.getElementById("adminApplicationStatusFilter")?.value || "all").toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("#adminApplicationsBody .admin-application-row").forEach(row => {
+    const status = row.dataset.status || "pending";
+    const statusMatch = filter === "all" || (filter === "pending" && ["pending","menunggu",""].includes(status)) || status === filter;
+    const match = statusMatch && (row.dataset.search || "").includes(query);
+    row.hidden = !match;
+    if (match) visible++;
+  });
+  const empty = document.getElementById("adminApplicationsEmpty");
+  if (empty) empty.hidden = visible > 0;
+};
+
 
 window.viewApplicantDetails = function(appId) {
   const app = adminState.applications.find(item => String(item.id) === String(appId));
@@ -396,12 +420,28 @@ window.setApplicationStatus = async function(appId, status) {
 window.updateAppStatus = async function(select) {
   const appId = select.dataset.appId;
   const status = select.value;
+  const previous = select.dataset.originalStatus || "pending";
+  if (status === previous) return;
+  const app = adminState.applications.find(item => String(item.id) === String(appId));
+  const name = app?.namaPeserta || app?.nama || "peserta ini";
+  const action = status === "approved" ? "menyetujui" : status === "rejected" ? "menolak" : "mengembalikan ke status menunggu";
+  if (!confirm("Yakin ingin " + action + " pendaftaran " + name + "?")) { select.value = previous; return; }
+  select.disabled = true;
   try {
     const data = await apiFetch({ action: "updateStatus", appId, status });
-    if (data.success) toast("Status diperbarui.", "success");
-    else toast(data.message || "Gagal memperbarui.", "error");
+    if (data && data.success) {
+      select.dataset.originalStatus = status;
+      toast(status === "approved" ? "Pendaftaran disetujui." : status === "rejected" ? "Pendaftaran ditolak." : "Status dikembalikan ke menunggu.", "success");
+      await renderApplications();
+    } else {
+      select.value = previous;
+      toast(data?.message || "Gagal memperbarui status.", "error");
+    }
   } catch {
-    toast("Gagal terhubung ke server.", "error");
+    select.value = previous;
+    toast("Gagal terhubung ke server. Status tidak diubah.", "error");
+  } finally {
+    select.disabled = false;
   }
 };
 
