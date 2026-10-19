@@ -137,8 +137,11 @@ async function renderStats() {
         <div class="db-stats-row">
           <div class="db-stat"><div class="db-stat-icon">👥</div><b>${data.users || 0}</b><span>Total Peserta</span></div>
           <div class="db-stat"><div class="db-stat-icon">📅</div><b>${data.events || 0}</b><span>Total Event</span></div>
-          <div class="db-stat"><div class="db-stat-icon">📋</div><b>${data.applications || 0}</b><span>Pendaftaran</span></div>
-          <div class="db-stat"><div class="db-stat-icon">✅</div><b>${data.approved || 0}</b><span>Disetujui</span></div>
+          <div class="db-stat"><div class="db-stat-icon">📋</div><b>${data.applications || 0}</b><span>Total Pendaftaran</span></div>
+          <div class="db-stat"><div class="db-stat-icon">⏳</div><b>${data.pending || 0}</b><span>Menunggu</span></div>
+          <div class="db-stat"><div class="db-stat-icon">✅</div><b>${data.approved || 0}</b><span>Disetujui / Hadir</span></div>
+          <div class="db-stat"><div class="db-stat-icon">🎟️</div><b>${data.attended || 0}</b><span>Sudah Hadir</span></div>
+          <div class="db-stat"><div class="db-stat-icon">↩️</div><b>${data.rejected || 0}</b><span>Ditolak</span></div>
         </div>
         <section class="admin-overview-section" style="margin-top:24px;">
         <div class="db-section-title">Kegiatan Terpublikasi <button class="btn btn-outline admin-btn-sm" onclick="renderStats()">↻ Perbarui</button></div>

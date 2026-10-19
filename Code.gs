@@ -521,43 +521,56 @@ function handleDaftar(p) {
 
 function handleCancelApplication(p) {
   const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
   const applicationId = String(p.applicationId || "").trim();
-  if (!userId || !applicationId) return { success: false, message: "Data pembatalan tidak lengkap." };
-  const sheet = getSheet(SHEET.APPLICATIONS);
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { success: false, message: "Pendaftaran tidak ditemukan." };
-  const headers = values[0].map(h => String(h).trim());
-  const idCol = headers.indexOf("id");
-  const userCol = headers.indexOf("userId");
-  const statusCol = headers.indexOf("status");
-  if (idCol < 0 || userCol < 0 || statusCol < 0) throw new Error("Kolom Applications tidak lengkap.");
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][idCol]) !== applicationId) continue;
-    if (String(values[i][userCol]) !== userId) return { success: false, message: "Kamu tidak berhak membatalkan pendaftaran ini." };
-    const status = String(values[i][statusCol] || "pending").trim().toLowerCase();
-    if (status === "cancelled" || status === "dibatalkan") return { success: false, message: "Pendaftaran ini sudah dibatalkan." };
-    if (status !== "pending" && status !== "menunggu") return { success: false, message: "Pendaftaran hanya dapat dibatalkan saat masih menunggu konfirmasi." };
-    sheet.getRange(i + 1, statusCol + 1).setValue("cancelled");
-    SpreadsheetApp.flush();
-    return { success: true, message: "Pendaftaran berhasil dibatalkan." };
+  if ((!userId && !email) || !applicationId) return { success: false, message: "Data pembatalan tidak lengkap." };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses perubahan lain. Coba kembali." };
+  try {
+    const sheet = getSheet(SHEET.APPLICATIONS);
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return { success: false, message: "Pendaftaran tidak ditemukan." };
+    const headers = values[0].map(h => String(h).trim());
+    const idCol = headers.indexOf("id"), userCol = headers.indexOf("userId"), statusCol = headers.indexOf("status");
+    if (idCol < 0 || userCol < 0 || statusCol < 0) throw new Error("Kolom Applications tidak lengkap.");
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][idCol]) !== applicationId) continue;
+      const storedUser = String(values[i][userCol] || "").trim();
+      const ownsApplication = (userId && storedUser === userId) || (email && storedUser.toLowerCase() === email);
+      if (!ownsApplication) return { success: false, message: "Kamu tidak berhak membatalkan pendaftaran ini." };
+      const status = String(values[i][statusCol] || "pending").trim().toLowerCase();
+      if (status === "cancelled" || status === "dibatalkan") return { success: false, message: "Pendaftaran ini sudah dibatalkan." };
+      if (status !== "pending" && status !== "menunggu") return { success: false, message: "Pendaftaran hanya dapat dibatalkan saat masih menunggu konfirmasi." };
+      sheet.getRange(i + 1, statusCol + 1).setValue("cancelled");
+      SpreadsheetApp.flush();
+      return { success: true, message: "Pendaftaran berhasil dibatalkan." };
+    }
+    return { success: false, message: "Pendaftaran tidak ditemukan." };
+  } finally {
+    lock.releaseLock();
   }
-  return { success: false, message: "Pendaftaran tidak ditemukan." };
 }
 
 function handleGetMyApplications(p) {
-  const { userId } = p;
-  if (!userId) return [];
-  const sheet = getSheet(SHEET.APPLICATIONS);
-  const apps = sheetToObjects(sheet);
-  return apps.filter(a => String(a.userId) === String(userId));
+  const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
+  if (!userId && !email) return [];
+  const apps = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  return apps.filter(app => {
+    const storedId = String(app.userId || "").trim();
+    return (userId && storedId === userId) || (email && storedId.toLowerCase() === email);
+  });
 }
 
 function handleGetMyCertificates(p) {
-  const { userId } = p;
-  if (!userId) return [];
-  const sheet = getSheet(SHEET.CERTIFICATES);
-  const certs = sheetToObjects(sheet);
-  return certs.filter(c => String(c.userId) === String(userId));
+  const userId = String(p.userId || "").trim();
+  const email = String(p.email || "").trim().toLowerCase();
+  if (!userId && !email) return [];
+  const certs = sheetToObjects(getSheet(SHEET.CERTIFICATES));
+  return certs.filter(cert => {
+    const storedId = String(cert.userId || "").trim();
+    return (userId && storedId === userId) || (email && storedId.toLowerCase() === email);
+  });
 }
 
 /* =========================================================
@@ -630,6 +643,10 @@ function adminUploadCertificate_(p) {
   const email = String(p.adminEmail || "").trim().toLowerCase();
   if (!isEventNevAdmin_(email)) return { success: false, message: "Akses upload hanya untuk admin." };
 
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses sertifikat lain. Coba kembali." };
+  try {
+
   const userId = String(p.userId || "").trim();
   const eventId = String(p.eventId || "").trim();
   const eventName = String(p.namaEvent || "").trim();
@@ -689,6 +706,9 @@ function adminUploadCertificate_(p) {
   };
   sheet.appendRow(headers.map(h => record[h] !== undefined ? record[h] : ""));
   return { success: true, message: "Sertifikat berhasil diunggah dan diberikan kepada peserta.", certificate: record, fileId: file.getId() };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function adminGetAllApplications(p) {
@@ -793,16 +813,20 @@ function adminGetStats() {
   const userCount = getSheet(SHEET.USERS).getLastRow() - 1;
   const eventCount = getSheet(SHEET.EVENTS).getLastRow() - 1;
   const appCount = getSheet(SHEET.APPLICATIONS).getLastRow() - 1;
-
-  const appSheet = getSheet(SHEET.APPLICATIONS);
-  const apps = sheetToObjects(appSheet);
-  const approved = apps.filter(a => /approved|disetujui|hadir/i.test(a.status || "")).length;
+  const apps = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  const approved = apps.filter(a => /^(approved|disetujui|hadir)$/i.test(String(a.status || "").trim())).length;
+  const pending = apps.filter(a => /^(pending|menunggu|)$/i.test(String(a.status || "").trim())).length;
+  const attended = apps.filter(a => /^hadir$/i.test(String(a.status || "").trim())).length;
+  const rejected = apps.filter(a => /^(rejected|ditolak)$/i.test(String(a.status || "").trim())).length;
 
   return {
     users: Math.max(userCount, 0),
     events: Math.max(eventCount, 0),
     applications: Math.max(appCount, 0),
     approved,
+    pending,
+    attended,
+    rejected
   };
 }
 
