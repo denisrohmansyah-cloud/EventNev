@@ -413,12 +413,14 @@ async function renderCertificates() {
     const results = await Promise.all([
       apiFetch({ action: "getUsers" }),
       apiFetch({ action: "getEvents" }),
-      apiFetch({ action: "getCertificates" })
+      apiFetch({ action: "getCertificates" }),
+      apiFetch({ action: "getAllApplications" })
     ]);
     adminState.users = Array.isArray(results[0]) ? results[0] : [];
     adminState.events = Array.isArray(results[1]) ? results[1] : [];
     if (results[2] && results[2].success === false) throw new Error(results[2].message || "Gagal memuat sertifikat.");
     adminState.certificates = Array.isArray(results[2]) ? results[2] : [];
+    adminState.applications = Array.isArray(results[3]) ? results[3] : [];
     const participants = adminState.users.filter(u => String(u.jenis || "").toLowerCase() !== "admin");
     setContent(`
       <section class="admin-cert-shell">
@@ -429,11 +431,13 @@ async function renderCertificates() {
         <form id="adminCertificateForm" class="admin-cert-form">
           <div class="admin-cert-form-title"><span>📤</span><div><h3>Unggah Sertifikat</h3><p>Isi data penerima dan pilih file sertifikat.</p></div></div>
           <div class="admin-editor-grid">
-            <label class="admin-editor-label">Peserta penerima *
-              <select id="certUserId" required><option value="">Pilih peserta…</option>${participants.map(u => `<option value="${sanitize(u.id)}">${sanitize(u.nama)} — ${sanitize(u.email)}</option>`).join("")}</select>
+            <label class="admin-editor-label">Kegiatan *
+              <select id="certEventId" required><option value="">Pilih kegiatan…</option>${adminState.events.map(ev => `<option value="${sanitize(ev.id)}" data-name="${sanitize(ev.nama)}">${sanitize(ev.nama)}</option>`).join("")}</select>
+              <small>Hanya kegiatan yang memiliki peserta dengan status kehadiran Hadir yang dapat dipilih.</small>
             </label>
-            <label class="admin-editor-label">Kegiatan terkait
-              <select id="certEventId"><option value="">Pilih kegiatan (opsional)…</option>${adminState.events.map(ev => `<option value="${sanitize(ev.id)}" data-name="${sanitize(ev.nama)}">${sanitize(ev.nama)}</option>`).join("")}</select>
+            <label class="admin-editor-label">Peserta hadir *
+              <select id="certUserId" required disabled><option value="">Pilih kegiatan terlebih dahulu…</option></select>
+              <small>Daftar peserta diambil dari catatan absensi dengan status Hadir.</small>
             </label>
             <label class="admin-editor-label">Nama sertifikat / kegiatan *
               <input id="certName" required maxlength="160" placeholder="Contoh: Sertifikat Open Lab Network Evolution">
@@ -458,8 +462,10 @@ async function renderCertificates() {
     `);
     document.getElementById("certEventId")?.addEventListener("change", e => {
       const opt = e.target.selectedOptions[0];
-      if (opt && opt.dataset.name && !document.getElementById("certName").value.trim()) document.getElementById("certName").value = "Sertifikat " + opt.dataset.name;
+      renderEligibleCertificateParticipants(e.target.value);
+      if (opt && opt.dataset.name) document.getElementById("certName").value = "Sertifikat " + opt.dataset.name;
     });
+    renderEligibleCertificateParticipants("");
     document.getElementById("certFile")?.addEventListener("change", e => {
       const file = e.target.files && e.target.files[0];
       const preview = document.getElementById("certFilePreview");
@@ -471,6 +477,28 @@ async function renderCertificates() {
   } catch (err) {
     setContent('<div class="admin-cert-error"><h3>Menu sertifikat belum dapat dimuat</h3><p>' + sanitize(err.message || "Periksa deployment Google Apps Script.") + '</p><button class="btn btn-outline" onclick="renderCertificates()">Coba lagi</button></div>');
   }
+}
+
+function renderEligibleCertificateParticipants(eventId) {
+  const select = document.getElementById("certUserId");
+  if (!select) return;
+  const eligible = new Map();
+  if (eventId) {
+    adminState.applications
+      .filter(app => String(app.eventId || "") === String(eventId) && /^hadir$/i.test(String(app.status || "").trim()))
+      .forEach(app => {
+        const userId = String(app.userId || "").trim();
+        const user = adminState.users.find(u => String(u.id || "") === userId);
+        if (user && String(user.jenis || "").toLowerCase() !== "admin") eligible.set(userId, user);
+      });
+  }
+  const users = [...eligible.values()];
+  select.disabled = !eventId || users.length === 0;
+  select.innerHTML = !eventId
+    ? '<option value="">Pilih kegiatan terlebih dahulu…</option>'
+    : users.length
+      ? '<option value="">Pilih peserta yang hadir…</option>' + users.map(u => '<option value="' + sanitize(u.id) + '">' + sanitize(u.nama) + ' — ' + sanitize(u.email) + '</option>').join("")
+      : '<option value="">Belum ada peserta berstatus Hadir</option>';
 }
 
 function renderCertificatesTable() {
