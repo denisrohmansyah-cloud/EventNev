@@ -588,7 +588,8 @@ function handleAbsen(p) {
     if (userIdIdx < 0 || eventIdIdx < 0 || statusIdx < 0) throw new Error("Kolom Applications tidak lengkap.");
 
     for (let i = 1; i < data.length; i++) {
-      const sameUser = String(data[i][userIdIdx] || "") === String(target.id || target.email);
+      const applicationUserId = String(data[i][userIdIdx] || "").trim().toLowerCase();
+      const sameUser = applicationUserId === String(target.id || "").trim().toLowerCase() || applicationUserId === String(target.email || "").trim().toLowerCase();
       const sameEvent = String(data[i][eventIdIdx] || "") === eventId;
       if (!sameUser || !sameEvent) continue;
 
