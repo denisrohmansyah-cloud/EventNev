@@ -150,13 +150,7 @@ function buatAdminAwal() {
     }
   }
 
-  let hash = 0;
-  for (let i = 0; i < PASSWORD_ADMIN.length; i++) {
-    const chr = PASSWORD_ADMIN.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  const passwordHash = "nev_" + Math.abs(hash).toString(36);
+  const passwordHash = hashPassword(PASSWORD_ADMIN);
 
   if (rowNumber === -1) {
     const newRow = new Array(headers.length).fill("");
@@ -355,15 +349,34 @@ function sheetToObjects(sheet) {
 /* =========================================================
    AUTH
    ========================================================= */
-function hashPassword(pw) {
-  // Simple hash — in production gunakan proper hashing
+function legacyHashPassword_(pw) {
   let hash = 0;
-  for (let i = 0; i < pw.length; i++) {
-    const chr = pw.charCodeAt(i);
+  for (let i = 0; i < String(pw).length; i++) {
+    const chr = String(pw).charCodeAt(i);
     hash = ((hash << 5) - hash) + chr;
     hash |= 0;
   }
   return "nev_" + Math.abs(hash).toString(36);
+}
+function passwordDigestHex_(value) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value), Utilities.Charset.UTF_8)
+    .map(function(b) { return ("0" + ((b + 256) % 256).toString(16)).slice(-2); }).join("");
+}
+function hashPassword(pw, salt) {
+  const rounds = 12000;
+  const saltValue = salt || (Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, ""));
+  let digest = passwordDigestHex_(saltValue + ":" + String(pw));
+  for (let i = 1; i < rounds; i++) digest = passwordDigestHex_(saltValue + ":" + i + ":" + digest);
+  return "nev2$" + rounds + "$" + saltValue + "$" + digest;
+}
+function verifyPassword_(pw, savedHash) {
+  const stored = String(savedHash || "");
+  if (stored.indexOf("nev2$") === 0) {
+    const parts = stored.split("$");
+    if (parts.length !== 4 || Number(parts[1]) !== 12000) return false;
+    return hashPassword(pw, parts[2]) === stored;
+  }
+  return stored === legacyHashPassword_(pw);
 }
 
 function handleLogin(p) {
@@ -374,8 +387,22 @@ function handleLogin(p) {
   const users = sheetToObjects(sheet);
   const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
 
-  if (!user) return { success: false, message: "Email tidak terdaftar." };
-  if (user.passwordHash !== hashPassword(password)) return { success: false, message: "Password salah." };
+  if (!user) return { success: false, message: "Email atau password tidak valid." };
+  if (!verifyPassword_(password, user.passwordHash)) return { success: false, message: "Email atau password tidak valid." };
+
+  // Upgrade legacy hashes only after a successful login; no schema or data reset is needed.
+  if (String(user.passwordHash || "").indexOf("nev2$") !== 0) {
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0].map(function(h) { return String(h).trim(); });
+    const emailCol = headers.indexOf("email");
+    const hashCol = headers.indexOf("passwordHash");
+    for (let i = 1; i < data.length; i++) {
+      if (emailCol >= 0 && hashCol >= 0 && String(data[i][emailCol]).toLowerCase() === String(user.email).toLowerCase()) {
+        sheet.getRange(i + 1, hashCol + 1).setValue(hashPassword(password));
+        break;
+      }
+    }
+  }
 
   const safeUser = {
     id: user.id, nama: user.nama, email: user.email, noHp: user.noHp,
