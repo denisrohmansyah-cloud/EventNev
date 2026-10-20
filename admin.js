@@ -59,6 +59,21 @@ function setNevLoading(active, message) {
     if (nevLoadingCount === 0) el.remove();
   }
 }
+async function fetchWithTimeout(url, options = {}, timeoutMs = 25000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err && err.name === "AbortError") {
+      throw new Error("Permintaan melebihi batas waktu 25 detik. Periksa koneksi atau deployment Apps Script, lalu coba lagi.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function apiFetch(params) {
   setNevLoading(true, "Memproses permintaan admin…");
   const controller = new AbortController();
@@ -777,7 +792,7 @@ async function uploadCertificateForParticipant(event) {
   try {
     const dataUrl = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("File tidak dapat dibaca.")); reader.readAsDataURL(file); });
     const admin = JSON.parse(localStorage.getItem("nevUser") || "{}");
-    const response = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"uploadCertificate",sessionToken:localStorage.getItem("nevSession") || "",userId,eventId,namaEvent,tanggal,fileName:file.name,mimeType:file.type,base64:String(dataUrl).split(",")[1]}) });
+    const response = await fetchWithTimeout(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"uploadCertificate",sessionToken:localStorage.getItem("nevSession") || "",userId,eventId,namaEvent,tanggal,fileName:file.name,mimeType:file.type,base64:String(dataUrl).split(",")[1]}) });
     const result = await response.json();
     if (!result || !result.success) throw new Error(result?.message || "Sertifikat gagal diunggah.");
     message.textContent = "✓ " + (result.message || "Sertifikat berhasil diberikan.");
@@ -892,7 +907,7 @@ window.deleteTrainer = async function(id, name) {
 
 async function uploadAdminImage(file, kind) {
   const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Gagal membaca gambar.")); reader.readAsDataURL(file); });
-  const response = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "uploadAdminImage", kind, fileName: file.name, mimeType: file.type, base64: String(dataUrl).split(",")[1], sessionToken: localStorage.getItem("nevSession") || "" }) });
+  const response = await fetchWithTimeout(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "uploadAdminImage", kind, fileName: file.name, mimeType: file.type, base64: String(dataUrl).split(",")[1], sessionToken: localStorage.getItem("nevSession") || "" }) });
   const result = await response.json();
   if (!result || !result.success || !result.url) throw new Error(result?.message || "Backend uploadAdminImage belum tersedia di Apps Script.");
   return result.url;
