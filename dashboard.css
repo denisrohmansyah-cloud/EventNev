@@ -639,3 +639,84 @@
   .admin-applications-page .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .admin-applications-page .admin-table { min-width:760px; }
 }
+
+
+/* EventNev dashboard stability patch: consistent spacing, contrast and overflow. */
+.dashboard-body .dashboard-main {
+  grid-template-columns: 252px minmax(0, 1fr);
+}
+.dashboard-body .dashboard-content {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.dashboard-body .dashboard-content > * {
+  min-width: 0;
+}
+.dashboard-body .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.dashboard-body .admin-table {
+  width: 100%;
+}
+.dashboard-body .admin-table th,
+.dashboard-body .admin-table td {
+  overflow-wrap: anywhere;
+}
+.dashboard-body .db-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.dashboard-body .btn:focus-visible,
+.dashboard-body .sidebar-item:focus-visible,
+.dashboard-body input:focus-visible,
+.dashboard-body select:focus-visible,
+.dashboard-body textarea:focus-visible {
+  outline: 2px solid var(--red-light);
+  outline-offset: 2px;
+}
+.dashboard-body .btn:disabled {
+  cursor: not-allowed;
+  opacity: .62;
+  transform: none;
+}
+.dashboard-body .admin-cert-form,
+.dashboard-body .admin-app-modal,
+.dashboard-body .db-stat,
+.dashboard-body .admin-overview-section {
+  min-width: 0;
+}
+.dashboard-body .admin-cert-form-title p,
+.dashboard-body .admin-cert-heading p {
+  color: var(--text-dim);
+}
+.dashboard-body .admin-cert-count,
+.dashboard-body .admin-status-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+  .dashboard-body .dashboard-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-body .dashboard-content {
+    padding: 20px 16px 36px;
+  }
+  .dashboard-body .admin-table {
+    min-width: 680px;
+  }
+}
+@media (prefers-contrast: more) {
+  .dashboard-body .sidebar-item.active {
+    border: 1px solid var(--red-light);
+  }
+  .dashboard-body .admin-status-chip {
+    border: 1px solid currentColor;
+  }
+}
