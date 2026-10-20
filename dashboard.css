@@ -639,3 +639,88 @@
   .admin-applications-page .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .admin-applications-page .admin-table { min-width:760px; }
 }
+
+
+/* =========================================================
+   Dashboard stability pass — responsive layout and contrast
+   ========================================================= */
+.dashboard-main { min-width: 0; }
+.dashboard-content { min-width: 0; overflow-wrap: anywhere; }
+.dashboard-content > *, .admin-cert-shell > *, .admin-applications-page > * { min-width: 0; }
+.dashboard-content img { max-width: 100%; height: auto; }
+.db-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.db-stat, .admin-cert-form, .admin-app-modal, .admin-published-card { min-width: 0; }
+.admin-cert-form-title > div { min-width: 0; }
+.admin-cert-form-title h3, .admin-cert-form-title p { overflow-wrap: anywhere; }
+.admin-cert-form input, .admin-cert-form select, .admin-cert-form textarea,
+.admin-editor-label input, .admin-editor-label select, .admin-editor-label textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+.admin-cert-actions { flex-wrap: wrap; }
+.admin-cert-actions .btn { max-width: 100%; }
+.admin-cert-list-section .table-wrap, .admin-overview-section .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.admin-table { border-collapse: separate; border-spacing: 0; }
+.admin-table th { color: var(--text); background: var(--dark-3); }
+.admin-table td { color: var(--text); }
+.admin-table tr:hover td { background: rgba(255,255,255,.035); }
+.admin-status-pill.pending, .admin-status-chip.pending {
+  color: #f7d58a; background: rgba(245,198,107,.14);
+}
+.admin-status-pill.approved, .admin-status-chip.approved {
+  color: #86e5b0; background: rgba(99,217,154,.14);
+}
+.admin-status-pill.rejected, .admin-status-chip.rejected {
+  color: #ff9aa0; background: rgba(255,91,103,.14);
+}
+.admin-status-pill.cancelled {
+  color: #c1c1cb; background: rgba(150,150,160,.14);
+}
+.dashboard-error {
+  max-width: 720px;
+  margin: 24px auto;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(225,38,47,.4);
+  border-radius: 16px;
+  background: var(--dark-2);
+  color: var(--text);
+}
+.dashboard-error h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.dashboard-error p { margin: 0 0 16px; color: var(--text-dim); overflow-wrap: anywhere; }
+#nevGlobalLoading { padding: 16px; box-sizing: border-box; }
+#nevGlobalLoading .nev-loading-message { line-height: 1.5; }
+
+@media (max-width: 1024px) {
+  .db-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-published-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .dashboard-main { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-sidebar { min-width: 0; max-width: 100%; }
+  .dashboard-sidebar .sidebar-profile { flex: 0 0 auto; min-width: 0; max-width: 190px; }
+  .dashboard-sidebar .sidebar-info { min-width: 0; }
+  .dashboard-sidebar .sidebar-nav { flex: 1 0 auto; min-width: 0; }
+  .dashboard-sidebar .sidebar-item { width: auto; min-width: max-content; flex: 0 0 auto; white-space: nowrap; }
+  .dashboard-content { max-width: none; padding: 22px 16px; }
+  .db-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .db-stat { padding: 15px; min-height: 120px; }
+  .admin-published-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-cert-heading { align-items: stretch; }
+  .admin-cert-count { align-self: flex-start; }
+  .admin-cert-form { padding: 16px; }
+  .admin-app-modal-backdrop { padding: 10px; }
+  .admin-app-modal-head, .admin-app-detail-grid { padding: 16px; }
+  .admin-app-detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+  .db-stats-row { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-content { padding-inline: 12px; }
+  .admin-cert-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .admin-cert-actions .btn { width: 100%; }
+  .admin-app-toolbar > * { max-width: 100%; }
+}
