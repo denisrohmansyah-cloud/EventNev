@@ -496,7 +496,7 @@ function handleRegister(p) {
 
   if (!nama || !email || !password || !noHp) return { success: false, message: "Nama, email, nomor HP, dan password wajib diisi." };
   if (nama.length > 120 || /[<>]/.test(nama)) return { success: false, message: "Nama tidak valid atau terlalu panjang." };
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(email) || email.length > 254) return { success: false, message: "Format email tidak valid." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) return { success: false, message: "Format email tidak valid." };
   if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
   if (password.length < 8 || password.length > 256) return { success: false, message: "Password harus berisi 8–256 karakter." };
   if (!jenis) return { success: false, message: "Jenis peserta tidak valid." };
