@@ -486,7 +486,7 @@ function handleLogin(p) {
 }
 
 function handleRegister(p) {
-  const nama = String(p.nama || "").trim().replace(/\\s+/g, " ");
+  const nama = String(p.nama || "").trim().replace(/\s+/g, " ");
   const email = String(p.email || "").trim().toLowerCase();
   const noHp = String(p.noHp || "").trim();
   const password = String(p.password || "");
@@ -552,7 +552,7 @@ function handleRegister(p) {
 
 function handleUpdateProfile(p) {
   const userId = String(p.userId || "").trim();
-  const nama = String(p.nama || "").trim().replace(/\\s+/g, " ");
+  const nama = String(p.nama || "").trim().replace(/\s+/g, " ");
   const noHp = String(p.noHp || "").trim();
   const profileFields = {
     universitas: String(p.universitas || "").trim().slice(0, 180),
