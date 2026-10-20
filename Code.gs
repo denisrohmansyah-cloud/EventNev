@@ -775,15 +775,18 @@ function adminUploadCertificate_(p) {
   if (!event) return { success: false, message: "Kegiatan terkait sertifikat tidak ditemukan." };
 
   const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
+  const userKeys = [String(user.id || "").trim().toLowerCase(), String(user.email || "").trim().toLowerCase()];
+  const eventKeys = [String(event.id || "").trim().toLowerCase(), String(event.nama || "").trim().toLowerCase()];
   const attended = applications.some(a =>
-    String(a.userId || "") === userId &&
-    String(a.eventId || "") === eventId &&
+    userKeys.indexOf(String(a.userId || "").trim().toLowerCase()) >= 0 &&
+    eventKeys.indexOf(String(a.eventId || "").trim().toLowerCase()) >= 0 &&
     String(a.status || "").trim().toLowerCase() === "hadir"
   );
   if (!attended) return { success: false, message: "Sertifikat hanya dapat diberikan kepada peserta yang tercatat Hadir pada kegiatan tersebut." };
 
   const existingCertificate = sheetToObjects(getSheet(SHEET.CERTIFICATES)).some(c =>
-    String(c.userId || "") === userId && String(c.eventId || "") === eventId
+    userKeys.indexOf(String(c.userId || "").trim().toLowerCase()) >= 0 &&
+    eventKeys.indexOf(String(c.eventId || "").trim().toLowerCase()) >= 0
   );
   if (existingCertificate) return { success: false, message: "Peserta ini sudah memiliki sertifikat untuk kegiatan tersebut." };
 
@@ -913,8 +916,15 @@ function adminDeleteApp(p) {
       const status = String(data[i][statusIdx] || "").trim().toLowerCase();
       const userId = String(data[i][userIdx] || "");
       const eventId = String(data[i][eventIdx] || "");
+      const users = sheetToObjects(getSheet(SHEET.USERS));
+      const targetUser = users.find(u => String(u.id || "").trim() === userId || String(u.email || "").trim().toLowerCase() === userId.trim().toLowerCase());
+      const events = sheetToObjects(getSheet(SHEET.EVENTS));
+      const targetEvent = events.find(ev => String(ev.id || "").trim() === eventId || String(ev.nama || "").trim().toLowerCase() === eventId.trim().toLowerCase());
+      const userKeys = [userId.trim().toLowerCase(), String(targetUser && targetUser.email || "").trim().toLowerCase()].filter(Boolean);
+      const eventKeys = [eventId.trim().toLowerCase(), String(targetEvent && targetEvent.nama || "").trim().toLowerCase()].filter(Boolean);
       const hasCertificate = sheetToObjects(getSheet(SHEET.CERTIFICATES)).some(cert =>
-        String(cert.userId || "") === userId && String(cert.eventId || "") === eventId
+        userKeys.indexOf(String(cert.userId || "").trim().toLowerCase()) >= 0 &&
+        eventKeys.indexOf(String(cert.eventId || "").trim().toLowerCase()) >= 0
       );
       if (status === "hadir" || hasCertificate) {
         return { success: false, message: "Pendaftaran ini memiliki riwayat kehadiran atau sertifikat. Data tidak dihapus agar riwayat tetap terjaga." };
@@ -1021,10 +1031,12 @@ function adminDeleteEvent_(p) {
   if (idIndex < 0) return { success: false, message: 'Kolom id tidak ditemukan pada sheet Events.' };
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idIndex]) !== eventId) continue;
+    const eventName = String(data[i][headers.indexOf("nama")] || "").trim().toLowerCase();
+    const eventKeys = [eventId.toLowerCase(), eventName].filter(Boolean);
     const applications = sheetToObjects(getSheet(SHEET.APPLICATIONS));
     const certificates = sheetToObjects(getSheet(SHEET.CERTIFICATES));
-    const hasApplications = applications.some(a => String(a.eventId || "") === eventId);
-    const hasCertificates = certificates.some(cert => String(cert.eventId || "") === eventId);
+    const hasApplications = applications.some(a => eventKeys.indexOf(String(a.eventId || "").trim().toLowerCase()) >= 0);
+    const hasCertificates = certificates.some(cert => eventKeys.indexOf(String(cert.eventId || "").trim().toLowerCase()) >= 0);
     if (hasApplications || hasCertificates) {
       return { success: false, message: "Event memiliki riwayat pendaftaran atau sertifikat. Nonaktifkan event melalui status agar riwayat tetap terjaga." };
     }
