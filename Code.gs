@@ -634,11 +634,15 @@ function handleAlumniCount() {
 
 function handlePesertaCount() {
   const users = sheetToObjects(getSheet(SHEET.USERS));
-  const count = users.filter(function(user) {
+  const unique = {};
+  users.forEach(function(user) {
     const jenis = String(user.jenis || "").trim().toLowerCase();
-    return jenis !== "admin" && String(user.id || "").trim() !== "";
-  }).length;
-  return { count: count };
+    const id = String(user.id || "").trim().toLowerCase();
+    const email = String(user.email || "").trim().toLowerCase();
+    if (jenis === "admin" || (!id && !email)) return;
+    unique[id || email] = true;
+  });
+  return { count: Object.keys(unique).length };
 }
 
 /* =========================================================
@@ -703,6 +707,8 @@ function handleDaftar(p) {
     const row = apps.findIndex(a => String(a.id) === String(existing.id)) + 2;
     if (row < 2) return { success: false, message: "Data pendaftaran lama tidak ditemukan." };
     const values = {
+      userId: String(userId || ""),
+      eventId: String(ev.id || eventId),
       namaEvent: ev ? ev.nama : (existing.namaEvent || eventId),
       kategori: ev ? ev.kategori : (existing.kategori || ""),
       tanggalDaftar: new Date().toISOString(),
