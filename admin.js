@@ -38,7 +38,6 @@ function formatDate(d) {
 }
 
 let nevLoadingCount = 0;
-let nevLoadingTimer = null;
 function setNevLoading(active, message) {
   nevLoadingCount = Math.max(0, nevLoadingCount + (active ? 1 : -1));
   let el = document.getElementById("nevGlobalLoading");
@@ -48,35 +47,45 @@ function setNevLoading(active, message) {
     el.setAttribute("role", "status");
     el.setAttribute("aria-live", "polite");
     el.innerHTML = '<span class="nev-loading-spinner"></span><span class="nev-loading-message"></span>';
-    el.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(8,8,11,.48);backdrop-filter:blur(2px);color:#fff;font:600 14px system-ui,sans-serif";
+    el.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(8,8,11,.36);backdrop-filter:blur(2px);color:#fff;font:600 14px system-ui,sans-serif";
     const style = document.createElement("style");
-    style.textContent = "#nevGlobalLoading .nev-loading-spinner{width:25px;height:25px;border:3px solid rgba(255,255,255,.25);border-top-color:#ed2632;border-radius:50%;animation:nevSpin .7s linear infinite}#nevGlobalLoading .nev-loading-message{background:#19191f;border:1px solid #383840;border-radius:10px;padding:13px 16px;box-shadow:0 8px 28px #0005}@keyframes nevSpin{to{transform:rotate(360deg)}}";
+    style.textContent = "#nevGlobalLoading .nev-loading-spinner{width:25px;height:25px;border:3px solid rgba(255,255,255,.25);border-top-color:#ed2632;border-radius:50%;animation:nevSpin .7s linear infinite}#nevGlobalLoading .nev-loading-message{max-width:min(80vw,360px);background:#19191f;border:1px solid #383840;border-radius:10px;padding:13px 16px;box-shadow:0 8px 28px #0005;overflow-wrap:anywhere}@keyframes nevSpin{to{transform:rotate(360deg)}}";
     document.head.appendChild(style);
     document.body.appendChild(el);
   }
   if (el) {
-    if (active) el.querySelector(".nev-loading-message").textContent = message || "Memproses permintaan admin…";
+    const label = el.querySelector(".nev-loading-message");
+    if (active && label) label.textContent = message || "Memproses permintaan admin…";
     if (nevLoadingCount === 0) el.remove();
   }
 }
 async function apiFetch(params) {
   setNevLoading(true, "Memproses permintaan admin…");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
   try {
     const sessionToken = localStorage.getItem("nevSession") || "";
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ ...params, sessionToken })
+      body: JSON.stringify({ ...params, sessionToken }),
+      signal: controller.signal
     });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const result = await res.json();
+    if (!res.ok) throw new Error("Server merespons HTTP " + res.status + ".");
+    let result;
+    try { result = await res.json(); }
+    catch (_) { throw new Error("Respons server tidak valid. Periksa deployment Google Apps Script."); }
     if (result && result.success === false && /sesi admin/i.test(String(result.message || ""))) {
       localStorage.removeItem("nevSession");
       localStorage.removeItem("nevUser");
       window.location.href = "login.html?role=admin";
     }
     return result;
+  } catch (err) {
+    if (err && err.name === "AbortError") throw new Error("Server tidak merespons dalam 25 detik. Periksa koneksi atau deployment Apps Script, lalu coba lagi.");
+    throw err;
   } finally {
+    clearTimeout(timeoutId);
     setNevLoading(false);
   }
 }
@@ -155,8 +164,8 @@ async function renderStats() {
       </div>
     `);
     await Promise.all([loadAdminPublishedEvents(), loadAdminLatestApplications()]);
-  } catch {
-    setContent('<div class="db-loading">Gagal memuat statistik.</div>');
+  } catch (err) {
+    setContent('<section class="dashboard-error" role="alert"><h3>Dashboard gagal dimuat</h3><p>' + sanitize(err.message || "Periksa koneksi dan sesi admin.") + '</p><button class="btn btn-primary" type="button" onclick="renderStats()">Coba lagi</button></section>');
   }
 }
 
