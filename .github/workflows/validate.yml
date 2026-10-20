@@ -1,0 +1,36 @@
+name: Validate EventNev
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "fix/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-check:
+    name: JavaScript syntax checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check JavaScript and Apps Script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in Code.gs app.js admin.js dashboard.js scanner.js google-auth.js; do
+            if [[ -f "$file" ]]; then
+              echo "Checking $file"
+              node --check < "$file"
+            fi
+          done
