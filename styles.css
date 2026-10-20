@@ -2141,3 +2141,29 @@ p  { font-size: 1rem; line-height: 1.7; }
   #eventModal > section.modal { border-radius: 16px !important; }
   #eventModal .modal-close { top: 8px !important; right: 8px !important; }
 }
+
+
+/* Compatibility alias: JS templates use btn-primary; keep it aligned with the existing red theme. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  background: var(--red);
+  color: #fff;
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+.btn-primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
+.btn-primary:focus-visible { outline: 2px solid var(--red-light); outline-offset: 3px; }
+.btn-primary:disabled { cursor: not-allowed; opacity: .6; transform: none; }
