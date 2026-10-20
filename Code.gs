@@ -195,6 +195,7 @@ function doGet(e) {
       case "getEvents": result = handleGetEvents(params); break;
       case "getTrainers": result = handleGetTrainers(params); break;
       case "getAlumniCount": result = handleAlumniCount(params); break;
+      case "getPesertaCount": result = handlePesertaCount(params); break;
       default: result = {success:false,message:"Aksi tidak dikenal: " + action};
     }
     return jsonResponse(result);
@@ -270,6 +271,7 @@ function doPost(e) {
       case "getEvents": result = handleGetEvents(p); break;
       case "getTrainers": result = handleGetTrainers(p); break;
       case "getAlumniCount": result = handleAlumniCount(p); break;
+      case "getPesertaCount": result = handlePesertaCount(p); break;
       case "daftar": result = handleDaftar(p); break;
       case "getMyApplications": result = handleGetMyApplications(p); break;
       case "cancelApplication": result = handleCancelApplication(p); break;
@@ -629,6 +631,20 @@ function handleAlumniCount() {
   return { count: row ? Number(row.value) || 0 : 0 };
 }
 
+
+function handlePesertaCount() {
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const unique = {};
+  users.forEach(function(user) {
+    const jenis = String(user.jenis || "").trim().toLowerCase();
+    const id = String(user.id || "").trim().toLowerCase();
+    const email = String(user.email || "").trim().toLowerCase();
+    if (jenis === "admin" || (!id && !email)) return;
+    unique[id || email] = true;
+  });
+  return { count: Object.keys(unique).length };
+}
+
 /* =========================================================
    APPLICATIONS
    ========================================================= */
@@ -691,6 +707,8 @@ function handleDaftar(p) {
     const row = apps.findIndex(a => String(a.id) === String(existing.id)) + 2;
     if (row < 2) return { success: false, message: "Data pendaftaran lama tidak ditemukan." };
     const values = {
+      userId: String(userId || ""),
+      eventId: String(ev.id || eventId),
       namaEvent: ev ? ev.nama : (existing.namaEvent || eventId),
       kategori: ev ? ev.kategori : (existing.kategori || ""),
       tanggalDaftar: new Date().toISOString(),
