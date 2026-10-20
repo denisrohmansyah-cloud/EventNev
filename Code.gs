@@ -195,6 +195,7 @@ function doGet(e) {
       case "getEvents": result = handleGetEvents(params); break;
       case "getTrainers": result = handleGetTrainers(params); break;
       case "getAlumniCount": result = handleAlumniCount(params); break;
+      case "getPesertaCount": result = handlePesertaCount(params); break;
       default: result = {success:false,message:"Aksi tidak dikenal: " + action};
     }
     return jsonResponse(result);
@@ -270,6 +271,7 @@ function doPost(e) {
       case "getEvents": result = handleGetEvents(p); break;
       case "getTrainers": result = handleGetTrainers(p); break;
       case "getAlumniCount": result = handleAlumniCount(p); break;
+      case "getPesertaCount": result = handlePesertaCount(p); break;
       case "daftar": result = handleDaftar(p); break;
       case "getMyApplications": result = handleGetMyApplications(p); break;
       case "cancelApplication": result = handleCancelApplication(p); break;
@@ -627,6 +629,16 @@ function handleAlumniCount() {
   const settings = sheetToObjects(sheet);
   const row = settings.find(s => s.key === "alumniCount");
   return { count: row ? Number(row.value) || 0 : 0 };
+}
+
+
+function handlePesertaCount() {
+  const users = sheetToObjects(getSheet(SHEET.USERS));
+  const count = users.filter(function(user) {
+    const jenis = String(user.jenis || "").trim().toLowerCase();
+    return jenis !== "admin" && String(user.id || "").trim() !== "";
+  }).length;
+  return { count: count };
 }
 
 /* =========================================================
