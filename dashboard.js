@@ -500,6 +500,18 @@ function renderProfile() {
           <label>Jenis peserta</label>
           <input type="text" value="${sanitize(u.jenis || u.role || "Peserta")}" disabled>
         </div>
+        ${String(u.jenis || "").toLowerCase() === "mahasiswa" ? `
+          <div class="db-field"><label>Universitas</label><input id="editUniversitas" maxlength="180" value="${sanitize(u.universitas || "")}" required></div>
+          <div class="db-field"><label>NIM</label><input id="editNim" maxlength="80" value="${sanitize(u.nim || "")}" required></div>
+          <div class="db-field"><label>Angkatan</label><input id="editAngkatan" maxlength="20" value="${sanitize(u.angkatan || "")}" required></div>
+          <div class="db-field"><label>Program studi</label><input id="editProdi" maxlength="160" value="${sanitize(u.prodi || "")}" required></div>
+          <div class="db-field"><label>Fakultas</label><input id="editFakultas" maxlength="160" value="${sanitize(u.fakultas || "")}" required></div>
+        ` : String(u.jenis || "").toLowerCase() === "siswa" ? `
+          <div class="db-field"><label>Nama sekolah</label><input id="editSekolah" maxlength="180" value="${sanitize(u.sekolah || "")}" required></div>
+          <div class="db-field"><label>NISN</label><input id="editNisn" maxlength="40" value="${sanitize(u.nisn || "")}" required></div>
+          <div class="db-field"><label>Angkatan</label><input id="editAngkatan" maxlength="20" value="${sanitize(u.angkatan || "")}" required></div>
+          <div class="db-field"><label>Jurusan</label><input id="editJurusan" maxlength="160" value="${sanitize(u.jurusan || "")}" required></div>
+        ` : `<p class="db-profile-note">Data institusi tidak wajib untuk kategori peserta umum.</p>`}
         <button type="submit" class="btn btn-red" style="width:fit-content;">Simpan Perubahan</button>
       </form>
     </div>
@@ -509,12 +521,24 @@ function renderProfile() {
     e.preventDefault();
     const nama = document.getElementById("editNama").value.trim();
     const noHp = document.getElementById("editNoHp").value.trim();
+    const profile = {
+      universitas:document.getElementById("editUniversitas")?.value.trim() || "",
+      nim:document.getElementById("editNim")?.value.trim() || "",
+      angkatan:document.getElementById("editAngkatan")?.value.trim() || "",
+      prodi:document.getElementById("editProdi")?.value.trim() || "",
+      fakultas:document.getElementById("editFakultas")?.value.trim() || "",
+      sekolah:document.getElementById("editSekolah")?.value.trim() || "",
+      nisn:document.getElementById("editNisn")?.value.trim() || "",
+      jurusan:document.getElementById("editJurusan")?.value.trim() || ""
+    };
     if (!nama) { toast("Nama tidak boleh kosong.", "error"); return; }
 
     try {
-      await apiFetch({ action: "updateProfile", userId: u.id || u.email, nama, noHp });
+      const result = await apiFetch({ action:"updateProfile", userId:u.id || u.email, nama, noHp, jenis:u.jenis, ...profile });
+      if (!result || result.success === false) throw new Error(result?.message || "Profil gagal disimpan.");
       state.user.nama = nama;
       state.user.noHp = noHp;
+      Object.assign(state.user, profile);
       localStorage.setItem("nevUser", JSON.stringify(state.user));
       const sidebarName = document.getElementById("sidebarName");
       if (sidebarName) sidebarName.textContent = nama;
