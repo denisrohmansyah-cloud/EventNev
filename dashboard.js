@@ -57,8 +57,26 @@ function formatEventTime(value) {
   return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).replace(":", ".") + " WIB";
 }
 
+async function nevFetchWithTimeout(url, options, timeoutMs = 25000) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (timedOut || (err && err.name === "AbortError")) {
+      throw new Error("Server terlalu lama merespons (25 detik). Periksa koneksi atau deployment Apps Script, lalu coba lagi.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 let nevLoadingCount = 0;
-let nevLoadingTimer = null;
 function setNevLoading(active, message) {
   nevLoadingCount = Math.max(0, nevLoadingCount + (active ? 1 : -1));
   let el = document.getElementById("nevGlobalLoading");
@@ -83,7 +101,7 @@ async function apiFetch(params) {
   setNevLoading(true, "Memuat data akun…");
   try {
     const sessionToken = localStorage.getItem("nevSession") || "";
-    const res = await fetch(SCRIPT_URL, {
+    const res = await nevFetchWithTimeout(SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ ...params, sessionToken })
