@@ -332,6 +332,7 @@ async function fetchDashboardEvents() {
   } catch (err) {
     console.error("fetchDashboardEvents:", err);
     state.events = [];
+    throw err;
   }
 }
 
