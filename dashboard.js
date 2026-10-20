@@ -363,6 +363,9 @@ function renderApplications() {
       </div>
     </div>
   `);
+  document.querySelectorAll("[data-calendar-app-id]").forEach(button => {
+    button.addEventListener("click", () => exportEventToCalendarForApplication(button.dataset.calendarAppId));
+  });
 }
 
 function filterMyApplications() {
@@ -391,6 +394,53 @@ function filterMyApplications() {
   } else if (empty) empty.remove();
 }
 
+
+function eventNevIcsEscape(value) {
+  return String(value == null ? "" : value).replace(/\\/g, "\\\\").replace(/\r\n|\n|\r/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+function eventNevCalendarUtc(parts, time, dayOffset) {
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + (dayOffset || 0), time.hour - 7, time.minute, 0));
+  const pad = n => String(n).padStart(2, "0");
+  return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + "T" + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + "00Z";
+}
+window.exportEventToCalendarForApplication = function(applicationId) {
+  const app = state.applications.find(item => String(item.id) === String(applicationId));
+  if (!app) { toast("Pendaftaran tidak ditemukan.", "error"); return; }
+  const status = String(app.status || "pending").trim().toLowerCase();
+  if (!["approved", "disetujui", "hadir"].includes(status)) { toast("Kalender tersedia setelah pendaftaran disetujui.", "error"); return; }
+  const event = state.events.find(item => (app.eventId && String(item.id) === String(app.eventId)) || (app.namaEvent && String(item.nama || "").trim().toLowerCase() === String(app.namaEvent).trim().toLowerCase()));
+  if (!event) { toast("Detail kegiatan belum tersedia. Perbarui dashboard lalu coba lagi.", "error"); return; }
+  const dateMatch = String(event.tanggal || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!dateMatch) { toast("Tanggal kegiatan belum valid sehingga kalender belum dapat dibuat.", "error"); return; }
+  const parts = {year:Number(dateMatch[1]), month:Number(dateMatch[2]), day:Number(dateMatch[3])};
+  const dateCheck = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  if (dateCheck.getUTCFullYear() !== parts.year || dateCheck.getUTCMonth() !== parts.month - 1 || dateCheck.getUTCDate() !== parts.day) { toast("Tanggal kegiatan tidak valid.", "error"); return; }
+  const times = String(event.waktu || "").split(/\s*(?:-|–|—|sampai|hingga)\s*/i);
+  const parseTime = (value, fallback) => {
+    const m = String(value || "").match(/(?:^|\D)([01]?\d|2[0-3])(?:[:.]\s*([0-5]\d))?/);
+    return m ? {hour:Number(m[1]),minute:Number(m[2] || 0)} : {hour:fallback,minute:0};
+  };
+  const start = parseTime(times[0], 9);
+  const end = times.length > 1 ? parseTime(times[1], start.hour + 1) : {hour:start.hour + 1, minute:start.minute};
+  const startMinutes = start.hour * 60 + start.minute;
+  const endMinutes = end.hour * 60 + end.minute;
+  const endDayOffset = times.length > 1 && endMinutes <= startMinutes ? 1 : 0;
+  if (times.length === 1 && end.hour > 23) { end.hour = 23; end.minute = 59; }
+  const uid = eventNevIcsEscape(String(app.id || event.id) + "@eventnev");
+  const summary = eventNevIcsEscape(event.nama || app.namaEvent || "Kegiatan EventNev");
+  const description = eventNevIcsEscape(String(event.deskripsi || "") + (event.syarat ? "\nPersyaratan: " + event.syarat : ""));
+  const location = eventNevIcsEscape(event.lokasi || "");
+  const stamp = eventNevCalendarUtc({year:2026,month:1,day:1},{hour:9,minute:0},0);
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//EventNev//Participant Calendar//ID","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT","UID:"+uid,"DTSTAMP:"+stamp,"DTSTART:"+eventNevCalendarUtc(parts,start,0),"DTEND:"+eventNevCalendarUtc(parts,end,endDayOffset),"SUMMARY:"+summary,"DESCRIPTION:"+description,"LOCATION:"+location,"END:VEVENT","END:VCALENDAR",""].join("\r\n");
+  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "eventnev-" + String(event.nama || "kegiatan").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60) + ".ics";
+  document.body.appendChild(link); link.click(); link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("File kalender kegiatan berhasil dibuat.", "success");
+};
 function buildAppCard(app) {
   const statusMap = {
     pending: { text: "Menunggu", cls: "badge-openlab" },
@@ -417,8 +467,12 @@ function buildAppCard(app) {
     : '<ol class="nev-app-timeline" aria-label="Tahapan pendaftaran">' + timeline.map((step, index) => '<li class="' + (index < timelineIndex ? "done" : (index === timelineIndex ? "current" : "")) + '"><span class="nev-timeline-dot" aria-hidden="true"></span><span>' + step.label + '</span></li>').join("") + '</ol>';
   const searchable = String((app.namaEvent || "") + " " + (app.eventId || "") + " " + (app.kategori || "")).toLowerCase();
   const filterStatus = ["menunggu", ""].includes(s) ? "pending" : (["disetujui"].includes(s) ? "approved" : (["dibatalkan"].includes(s) ? "cancelled" : s));
+  const canAddCalendar = ["approved", "disetujui", "hadir"].includes(s) && !!app.id &&
+    state.events.some(event => (app.eventId && String(event.id) === String(app.eventId)) ||
+      (app.namaEvent && String(event.nama || "").trim().toLowerCase() === String(app.namaEvent).trim().toLowerCase()));
   return '<div class="db-app-card" data-search="' + sanitize(searchable) + '" data-status="' + sanitize(filterStatus) + '"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
-    (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\'' + sanitize(app.id) + '\')">Batalkan pendaftaran</button>' : "") +
+    (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\\'' + sanitize(app.id) + '\\')">Batalkan pendaftaran</button>' : "") +
+    (canAddCalendar ? '<button type="button" class="db-cancel-application" data-calendar-app-id="' + sanitize(app.id) + '" style="margin-left:8px;">＋ Simpan ke kalender</button>' : "") +
     '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div>' + timelineHtml + '</div>';
 }
 
