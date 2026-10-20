@@ -551,15 +551,23 @@ function handleDaftar(p) {
   const sheet = getSheet(SHEET.APPLICATIONS);
   eventNevEnsureHeaders_(sheet, ["requirementFileId", "requirementFileName"]);
   const apps = sheetToObjects(sheet);
-  const existing = apps.find(a => String(a.userId) === String(userId) && String(a.eventId) === String(eventId));
-  if (existing) {
-    const oldStatus = String(existing.status || "pending").trim().toLowerCase();
-    if (oldStatus !== "cancelled" && oldStatus !== "dibatalkan") return { success: false, message: "Kamu sudah mendaftar ke kegiatan ini." };
-  }
   const evSheet = getSheet(SHEET.EVENTS);
   const events = sheetToObjects(evSheet);
   const ev = events.find(e => String(e.id) === String(eventId) || String(e.nama) === String(eventId));
   if (!ev) return { success: false, message: "Kegiatan tidak ditemukan atau sudah tidak tersedia." };
+
+  // Kompatibilitas data lama: pendaftaran mungkin menyimpan email atau nama event,
+  // sedangkan sesi dan event terbaru menggunakan ID kanonis.
+  const userKeys = [String(userId || "").trim().toLowerCase(), String(p.email || email || "").trim().toLowerCase()].filter(Boolean);
+  const eventKeys = [String(eventId || "").trim().toLowerCase(), String(ev.id || "").trim().toLowerCase(), String(ev.nama || "").trim().toLowerCase()].filter(Boolean);
+  const existing = apps.find(a =>
+    userKeys.indexOf(String(a.userId || "").trim().toLowerCase()) >= 0 &&
+    eventKeys.indexOf(String(a.eventId || "").trim().toLowerCase()) >= 0
+  );
+  if (existing) {
+    const oldStatus = String(existing.status || "pending").trim().toLowerCase();
+    if (!["cancelled", "dibatalkan"].includes(oldStatus)) return { success: false, message: "Kamu sudah mendaftar ke kegiatan ini." };
+  }
   const eventStatus = String(ev.status || "").trim().toLowerCase();
   if (["tutup","ditutup","closed","close","nonaktif","tidak aktif","draft","penuh"].indexOf(eventStatus) >= 0) {
     return { success: false, message: "Pendaftaran kegiatan ini sudah ditutup." };
@@ -571,8 +579,10 @@ function handleDaftar(p) {
   }
   const capacity = Number(ev.kuota || 0);
   if (Number.isFinite(capacity) && capacity > 0) {
-    const occupied = apps.filter(a => String(a.eventId) === String(ev.id) &&
-      !["cancelled","dibatalkan","rejected","ditolak"].includes(String(a.status || "pending").trim().toLowerCase())).length;
+    const occupied = apps.filter(a =>
+      eventKeys.indexOf(String(a.eventId || "").trim().toLowerCase()) >= 0 &&
+      !["cancelled","dibatalkan","rejected","ditolak"].includes(String(a.status || "pending").trim().toLowerCase())
+    ).length;
     const existingStatus = String(existing && existing.status || "").trim().toLowerCase();
     const alreadyCounted = existing && !["cancelled","dibatalkan","rejected","ditolak"].includes(existingStatus);
     if (!alreadyCounted && occupied >= capacity) return { success: false, message: "Kuota kegiatan sudah penuh." };
@@ -601,7 +611,7 @@ function handleDaftar(p) {
     return { success: true, message: "Pendaftaran berhasil dibuat kembali! Menunggu konfirmasi admin." };
   }
   const id = "APP_" + Date.now();
-  const record = {id:id,userId:userId,eventId:eventId,namaEvent:ev ? ev.nama : eventId,kategori:ev ? ev.kategori : "",tanggalDaftar:new Date().toISOString(),status:"pending",catatan:"",requirementFileId:requirementFileId || "",requirementFileName:requirementFileName || ""};
+  const record = {id:id,userId:userId,eventId:String(ev.id || eventId),namaEvent:ev.nama || eventId,kategori:ev.kategori || "",tanggalDaftar:new Date().toISOString(),status:"pending",catatan:"",requirementFileId:requirementFileId || "",requirementFileName:requirementFileName || ""};
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
   sheet.appendRow(headers.map(h => record[h] !== undefined ? record[h] : ""));
   return { success: true, message: "Pendaftaran berhasil! Menunggu konfirmasi admin." };
