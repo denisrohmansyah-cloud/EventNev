@@ -357,7 +357,14 @@ function getEventNevSession_(p) {
   let saved; try { saved = JSON.parse(raw); } catch (ignore) { return null; }
   const user = sheetToObjects(getSheet(SHEET.USERS)).find(u => String(u.id) === saved.userId && String(u.email || "").toLowerCase() === saved.email);
   if (!user) return null;
-  return {id:user.id,nama:user.nama,email:user.email,noHp:user.noHp,jenis:user.jenis,poin:user.poin||0,role:String(user.jenis||"").toLowerCase()==="admin"?"admin":"peserta"};
+  return {
+    id:user.id,nama:user.nama,email:user.email,noHp:user.noHp,jenis:user.jenis,poin:user.poin||0,
+    universitas:user.universitas||user.asalUniversitas||"",nim:user.nim||user.NIM||user.nimNis||"",
+    angkatan:user.angkatan||user.tahunMasuk||"",prodi:user.prodi||user.programStudi||"",
+    fakultas:user.fakultas||"",sekolah:user.sekolah||user.asalSekolah||"",
+    nisn:user.nisn||"",jurusan:user.jurusan||"",
+    role:String(user.jenis||"").toLowerCase()==="admin"?"admin":"peserta"
+  };
 }
 function requireEventNevAdmin_(p) { const user = getEventNevSession_(p); return user && user.role === "admin" ? {success:true,user:user} : {success:false,message:"Sesi admin tidak valid atau kedaluwarsa. Silakan login kembali."}; }
 function requireEventNevParticipant_(p) { const user = getEventNevSession_(p); return user && user.role !== "admin" ? {success:true,user:user} : {success:false,message:"Sesi peserta tidak valid atau kedaluwarsa. Silakan login kembali."}; }
@@ -465,37 +472,104 @@ function handleLogin(p) {
   const safeUser = {
     id: user.id, nama: user.nama, email: user.email, noHp: user.noHp,
     jenis: user.jenis, poin: user.poin || 0,
+    universitas: user.universitas || user.asalUniversitas || "",
+    nim: user.nim || user.NIM || user.nimNis || "",
+    angkatan: user.angkatan || user.tahunMasuk || "",
+    prodi: user.prodi || user.programStudi || "",
+    fakultas: user.fakultas || "",
+    sekolah: user.sekolah || user.asalSekolah || "",
+    nisn: user.nisn || "",
+    jurusan: user.jurusan || "",
     role: String(user.jenis || "").toLowerCase() === "admin" ? "admin" : "peserta"
   };
   return { success: true, user: safeUser, sessionToken: createEventNevSession_(user) };
 }
 
 function handleRegister(p) {
-  const { nama, email, noHp, jenis, password } = p;
-  if (!nama || !email || !password) return { success: false, message: "Data tidak lengkap." };
-  if (password.length < 8) return { success: false, message: "Password minimal 8 karakter." };
+  const nama = String(p.nama || "").trim().replace(/\s+/g, " ");
+  const email = String(p.email || "").trim().toLowerCase();
+  const noHp = String(p.noHp || "").trim();
+  const password = String(p.password || "");
+  const jenisInput = String(p.jenis || "umum").trim().toLowerCase();
+  const jenisMap = { mahasiswa: "Mahasiswa", siswa: "Siswa", umum: "Umum" };
+  const jenis = jenisMap[jenisInput];
 
-  const sheet = getSheet(SHEET.USERS);
-  const users = sheetToObjects(sheet);
-  if (users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
-    return { success: false, message: "Email sudah terdaftar." };
+  if (!nama || !email || !password || !noHp) return { success: false, message: "Nama, email, nomor HP, dan password wajib diisi." };
+  if (nama.length > 120 || /[<>]/.test(nama)) return { success: false, message: "Nama tidak valid atau terlalu panjang." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) return { success: false, message: "Format email tidak valid." };
+  if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
+  if (password.length < 8 || password.length > 256) return { success: false, message: "Password harus berisi 8–256 karakter." };
+  if (!jenis) return { success: false, message: "Jenis peserta tidak valid." };
+
+  const profile = {
+    universitas: String(p.universitas || "").trim().slice(0, 180),
+    nim: String(p.nim || "").trim().slice(0, 80),
+    angkatan: String(p.angkatan || "").trim().slice(0, 20),
+    prodi: String(p.prodi || "").trim().slice(0, 160),
+    fakultas: String(p.fakultas || "").trim().slice(0, 160),
+    sekolah: String(p.sekolah || "").trim().slice(0, 180),
+    nisn: String(p.nisn || "").trim().slice(0, 40),
+    jurusan: String(p.jurusan || "").trim().slice(0, 160)
+  };
+  if (jenis === "Mahasiswa" && (!profile.universitas || !profile.nim || !profile.angkatan || !profile.prodi || !profile.fakultas)) {
+    return { success: false, message: "Data mahasiswa belum lengkap. Isi universitas, NIM, angkatan, program studi, dan fakultas." };
+  }
+  if (jenis === "Siswa" && (!profile.sekolah || !profile.nisn || !profile.angkatan || !profile.jurusan)) {
+    return { success: false, message: "Data siswa belum lengkap. Isi sekolah, NISN, angkatan, dan jurusan." };
   }
 
-  const id = "USR_" + Date.now();
-  sheet.appendRow([id, nama, email, noHp || "", jenis || "Umum", hashPassword(password), 0, new Date().toISOString()]);
-  return { success: true, message: "Akun berhasil dibuat." };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { success: false, message: "Sistem sedang memproses pendaftaran akun lain. Coba kembali." };
+  try {
+    const sheet = getSheet(SHEET.USERS);
+    // Tambahkan kolom profil yang belum tersedia tanpa mengubah atau menghapus data lama.
+    eventNevEnsureHeaders_(sheet, ["universitas", "nim", "angkatan", "prodi", "fakultas", "sekolah", "nisn", "jurusan"]);
+    const data = sheetToObjects(sheet);
+    if (data.some(u => String(u.email || "").trim().toLowerCase() === email)) {
+      return { success: false, message: "Email sudah terdaftar." };
+    }
+
+    const id = "USR_" + Utilities.getUuid().replace(/-/g, "").slice(0, 20);
+    const createdAt = new Date().toISOString();
+    const record = {
+      id: id, nama: nama, email: email, noHp: noHp, jenis: jenis,
+      passwordHash: hashPassword(password), poin: 0, createdAt: createdAt,
+      universitas: profile.universitas, asalUniversitas: profile.universitas,
+      nim: profile.nim, NIM: profile.nim, nimNis: profile.nim,
+      angkatan: profile.angkatan, tahunMasuk: profile.angkatan,
+      prodi: profile.prodi, programStudi: profile.prodi,
+      fakultas: profile.fakultas, sekolah: profile.sekolah,
+      asalSekolah: profile.sekolah, nisn: profile.nisn, jurusan: profile.jurusan
+    };
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    sheet.appendRow(headers.map(h => Object.prototype.hasOwnProperty.call(record, h) ? record[h] : ""));
+    SpreadsheetApp.flush();
+    return { success: true, message: "Akun berhasil dibuat." };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleUpdateProfile(p) {
   const userId = String(p.userId || "").trim();
-  const nama = String(p.nama || "").trim().replace(/\\s+/g, " ");
+  const nama = String(p.nama || "").trim().replace(/\s+/g, " ");
   const noHp = String(p.noHp || "").trim();
+  const profileFields = {
+    universitas: String(p.universitas || "").trim().slice(0, 180),
+    nim: String(p.nim || "").trim().slice(0, 80),
+    angkatan: String(p.angkatan || "").trim().slice(0, 20),
+    prodi: String(p.prodi || "").trim().slice(0, 160),
+    fakultas: String(p.fakultas || "").trim().slice(0, 160),
+    sekolah: String(p.sekolah || "").trim().slice(0, 180),
+    nisn: String(p.nisn || "").trim().slice(0, 40),
+    jurusan: String(p.jurusan || "").trim().slice(0, 160)
+  };
   if (!userId || !nama) return { success: false, message: "Nama lengkap wajib diisi." };
   if (nama.length > 120) return { success: false, message: "Nama maksimal 120 karakter." };
   if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
   if (/[<>]/.test(nama)) return { success: false, message: "Nama mengandung karakter yang tidak diperbolehkan." };
-
   const sheet = getSheet(SHEET.USERS);
+  eventNevEnsureHeaders_(sheet, ["universitas","nim","angkatan","prodi","fakultas","sekolah","nisn","jurusan"]);
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return { success: false, message: "Akun tidak ditemukan." };
   const headers = data[0].map(h => String(h).trim());
@@ -510,10 +584,26 @@ function handleUpdateProfile(p) {
       const matchesId = idIdx >= 0 && String(data[i][idIdx] || "") === userId;
       const matchesEmail = emailIdx >= 0 && String(data[i][emailIdx] || "").toLowerCase() === userId.toLowerCase();
       if (!matchesId && !matchesEmail) continue;
+      const jenisIdx = headers.indexOf("jenis");
+      const actualJenis = jenisIdx >= 0 ? String(data[i][jenisIdx] || "").trim().toLowerCase() : "";
+      if (actualJenis === "mahasiswa" && (!profileFields.universitas || !profileFields.nim || !profileFields.angkatan || !profileFields.prodi || !profileFields.fakultas)) return {success:false,message:"Data mahasiswa belum lengkap."};
+      if (actualJenis === "siswa" && (!profileFields.sekolah || !profileFields.nisn || !profileFields.angkatan || !profileFields.jurusan)) return {success:false,message:"Data siswa belum lengkap."};
       sheet.getRange(i + 1, namaIdx + 1).setValue(nama);
       if (noHpIdx >= 0) sheet.getRange(i + 1, noHpIdx + 1).setValue(noHp);
+      const profileAliases = {
+        universitas:["universitas","asalUniversitas"], nim:["nim","NIM","nimNis"],
+        angkatan:["angkatan","tahunMasuk"], prodi:["prodi","programStudi"],
+        fakultas:["fakultas"], sekolah:["sekolah","asalSekolah"], nisn:["nisn"], jurusan:["jurusan"]
+      };
+      Object.keys(profileAliases).forEach(function(key) {
+        const value = profileFields[key];
+        profileAliases[key].forEach(function(header) {
+          const idx = headers.indexOf(header);
+          if (idx >= 0) sheet.getRange(i + 1, idx + 1).setValue(value);
+        });
+      });
       SpreadsheetApp.flush();
-      return { success: true, message: "Profil berhasil diperbarui.", nama: nama, noHp: noHp };
+      return { success: true, message: "Profil berhasil diperbarui.", nama:nama,noHp:noHp,profile:profileFields };
     }
     return { success: false, message: "Akun tidak ditemukan." };
   } finally {
@@ -848,7 +938,7 @@ function adminGetAllApplications(p) {
       noHpPeserta: user ? (user.noHp || "") : "",
       jenisPeserta: user ? (user.jenis || "") : "",
       nimPeserta: user ? (user.nim || user.NIM || user.nimNis || "") : "",
-      universitasPeserta: user ? (user.asalUniversitas || user.universitas || user.institusi || user.asalSekolah || "") : "",
+      universitasPeserta: user ? (user.asalUniversitas || user.universitas || user.institusi || user.asalSekolah || user.sekolah || "") : "",
       fakultasPeserta: user ? (user.fakultas || "") : "",
       prodiPeserta: user ? (user.programStudi || user.prodi || user.jurusan || "") : "",
       angkatanPeserta: user ? (user.angkatan || user.tahunMasuk || "") : "",
