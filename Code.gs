@@ -357,7 +357,14 @@ function getEventNevSession_(p) {
   let saved; try { saved = JSON.parse(raw); } catch (ignore) { return null; }
   const user = sheetToObjects(getSheet(SHEET.USERS)).find(u => String(u.id) === saved.userId && String(u.email || "").toLowerCase() === saved.email);
   if (!user) return null;
-  return {id:user.id,nama:user.nama,email:user.email,noHp:user.noHp,jenis:user.jenis,poin:user.poin||0,role:String(user.jenis||"").toLowerCase()==="admin"?"admin":"peserta"};
+  return {
+    id:user.id,nama:user.nama,email:user.email,noHp:user.noHp,jenis:user.jenis,poin:user.poin||0,
+    universitas:user.universitas||user.asalUniversitas||"",nim:user.nim||user.NIM||user.nimNis||"",
+    angkatan:user.angkatan||user.tahunMasuk||"",prodi:user.prodi||user.programStudi||"",
+    fakultas:user.fakultas||"",sekolah:user.sekolah||user.asalSekolah||"",
+    nisn:user.nisn||"",jurusan:user.jurusan||"",
+    role:String(user.jenis||"").toLowerCase()==="admin"?"admin":"peserta"
+  };
 }
 function requireEventNevAdmin_(p) { const user = getEventNevSession_(p); return user && user.role === "admin" ? {success:true,user:user} : {success:false,message:"Sesi admin tidak valid atau kedaluwarsa. Silakan login kembali."}; }
 function requireEventNevParticipant_(p) { const user = getEventNevSession_(p); return user && user.role !== "admin" ? {success:true,user:user} : {success:false,message:"Sesi peserta tidak valid atau kedaluwarsa. Silakan login kembali."}; }
@@ -465,6 +472,14 @@ function handleLogin(p) {
   const safeUser = {
     id: user.id, nama: user.nama, email: user.email, noHp: user.noHp,
     jenis: user.jenis, poin: user.poin || 0,
+    universitas: user.universitas || user.asalUniversitas || "",
+    nim: user.nim || user.NIM || user.nimNis || "",
+    angkatan: user.angkatan || user.tahunMasuk || "",
+    prodi: user.prodi || user.programStudi || "",
+    fakultas: user.fakultas || "",
+    sekolah: user.sekolah || user.asalSekolah || "",
+    nisn: user.nisn || "",
+    jurusan: user.jurusan || "",
     role: String(user.jenis || "").toLowerCase() === "admin" ? "admin" : "peserta"
   };
   return { success: true, user: safeUser, sessionToken: createEventNevSession_(user) };
@@ -539,12 +554,25 @@ function handleUpdateProfile(p) {
   const userId = String(p.userId || "").trim();
   const nama = String(p.nama || "").trim().replace(/\\s+/g, " ");
   const noHp = String(p.noHp || "").trim();
+  const profileFields = {
+    universitas: String(p.universitas || "").trim().slice(0, 180),
+    nim: String(p.nim || "").trim().slice(0, 80),
+    angkatan: String(p.angkatan || "").trim().slice(0, 20),
+    prodi: String(p.prodi || "").trim().slice(0, 160),
+    fakultas: String(p.fakultas || "").trim().slice(0, 160),
+    sekolah: String(p.sekolah || "").trim().slice(0, 180),
+    nisn: String(p.nisn || "").trim().slice(0, 40),
+    jurusan: String(p.jurusan || "").trim().slice(0, 160)
+  };
   if (!userId || !nama) return { success: false, message: "Nama lengkap wajib diisi." };
   if (nama.length > 120) return { success: false, message: "Nama maksimal 120 karakter." };
   if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
   if (/[<>]/.test(nama)) return { success: false, message: "Nama mengandung karakter yang tidak diperbolehkan." };
+  if (/^(mahasiswa)$/i.test(String(p.jenis || "")) && (!profileFields.universitas || !profileFields.nim || !profileFields.angkatan || !profileFields.prodi || !profileFields.fakultas)) return { success:false,message:"Data mahasiswa belum lengkap." };
+  if (/^(siswa)$/i.test(String(p.jenis || "")) && (!profileFields.sekolah || !profileFields.nisn || !profileFields.angkatan || !profileFields.jurusan)) return { success:false,message:"Data siswa belum lengkap." };
 
   const sheet = getSheet(SHEET.USERS);
+  eventNevEnsureHeaders_(sheet, ["universitas","nim","angkatan","prodi","fakultas","sekolah","nisn","jurusan"]);
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return { success: false, message: "Akun tidak ditemukan." };
   const headers = data[0].map(h => String(h).trim());
@@ -561,8 +589,20 @@ function handleUpdateProfile(p) {
       if (!matchesId && !matchesEmail) continue;
       sheet.getRange(i + 1, namaIdx + 1).setValue(nama);
       if (noHpIdx >= 0) sheet.getRange(i + 1, noHpIdx + 1).setValue(noHp);
+      const profileAliases = {
+        universitas:["universitas","asalUniversitas"], nim:["nim","NIM","nimNis"],
+        angkatan:["angkatan","tahunMasuk"], prodi:["prodi","programStudi"],
+        fakultas:["fakultas"], sekolah:["sekolah","asalSekolah"], nisn:["nisn"], jurusan:["jurusan"]
+      };
+      Object.keys(profileAliases).forEach(function(key) {
+        const value = profileFields[key];
+        profileAliases[key].forEach(function(header) {
+          const idx = headers.indexOf(header);
+          if (idx >= 0) sheet.getRange(i + 1, idx + 1).setValue(value);
+        });
+      });
       SpreadsheetApp.flush();
-      return { success: true, message: "Profil berhasil diperbarui.", nama: nama, noHp: noHp };
+      return { success: true, message: "Profil berhasil diperbarui.", nama:nama,noHp:noHp,profile:profileFields };
     }
     return { success: false, message: "Akun tidak ditemukan." };
   } finally {
