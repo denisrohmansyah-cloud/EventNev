@@ -568,9 +568,6 @@ function handleUpdateProfile(p) {
   if (nama.length > 120) return { success: false, message: "Nama maksimal 120 karakter." };
   if (noHp.length > 30) return { success: false, message: "Nomor HP maksimal 30 karakter." };
   if (/[<>]/.test(nama)) return { success: false, message: "Nama mengandung karakter yang tidak diperbolehkan." };
-  if (/^(mahasiswa)$/i.test(String(p.jenis || "")) && (!profileFields.universitas || !profileFields.nim || !profileFields.angkatan || !profileFields.prodi || !profileFields.fakultas)) return { success:false,message:"Data mahasiswa belum lengkap." };
-  if (/^(siswa)$/i.test(String(p.jenis || "")) && (!profileFields.sekolah || !profileFields.nisn || !profileFields.angkatan || !profileFields.jurusan)) return { success:false,message:"Data siswa belum lengkap." };
-
   const sheet = getSheet(SHEET.USERS);
   eventNevEnsureHeaders_(sheet, ["universitas","nim","angkatan","prodi","fakultas","sekolah","nisn","jurusan"]);
   const data = sheet.getDataRange().getValues();
@@ -587,6 +584,10 @@ function handleUpdateProfile(p) {
       const matchesId = idIdx >= 0 && String(data[i][idIdx] || "") === userId;
       const matchesEmail = emailIdx >= 0 && String(data[i][emailIdx] || "").toLowerCase() === userId.toLowerCase();
       if (!matchesId && !matchesEmail) continue;
+      const jenisIdx = headers.indexOf("jenis");
+      const actualJenis = jenisIdx >= 0 ? String(data[i][jenisIdx] || "").trim().toLowerCase() : "";
+      if (actualJenis === "mahasiswa" && (!profileFields.universitas || !profileFields.nim || !profileFields.angkatan || !profileFields.prodi || !profileFields.fakultas)) return {success:false,message:"Data mahasiswa belum lengkap."};
+      if (actualJenis === "siswa" && (!profileFields.sekolah || !profileFields.nisn || !profileFields.angkatan || !profileFields.jurusan)) return {success:false,message:"Data siswa belum lengkap."};
       sheet.getRange(i + 1, namaIdx + 1).setValue(nama);
       if (noHpIdx >= 0) sheet.getRange(i + 1, noHpIdx + 1).setValue(noHp);
       const profileAliases = {
