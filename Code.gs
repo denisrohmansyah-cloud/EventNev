@@ -251,9 +251,9 @@ function doPost(e) {
       if (bytes.length >= 1048576) return jsonResponse({success:false,message:"Foto harus di bawah 1 MB."});
       if (!eventNevFileMatchesMime_(bytes, mime)) return jsonResponse({success:false,message:"Isi file tidak sesuai dengan format foto yang dipilih."});
       const props = PropertiesService.getScriptProperties(); let folder = null;
-      const savedId = props.getProperty("EVENTNEV_REQUIREMENT_FOLDER_ID");
+      const savedId = props.getProperty("EVENTNEV_PRIVATE_REQUIREMENT_FOLDER_ID");
       if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
-      if (!folder) { folder = DriveApp.createFolder("EventNev - Foto Persyaratan Peserta"); props.setProperty("EVENTNEV_REQUIREMENT_FOLDER_ID", folder.getId()); }
+      if (!folder) { folder = DriveApp.createFolder("EventNev - Foto Persyaratan Peserta"); props.setProperty("EVENTNEV_PRIVATE_REQUIREMENT_FOLDER_ID", folder.getId()); }
       const name = String(p.fileName || "foto-persyaratan.jpg").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0,100);
       const file = folder.createFile(Utilities.newBlob(bytes, mime, name));
       file.setDescription("EventNevRequirement:v1;userId=" + String(userAuth.user.id || "") + ";eventId=" + String(ev.id || ""));
@@ -560,10 +560,13 @@ function handleDaftar(p) {
   // sedangkan sesi dan event terbaru menggunakan ID kanonis.
   const userKeys = [String(userId || "").trim().toLowerCase(), String(p.email || email || "").trim().toLowerCase()].filter(Boolean);
   const eventKeys = [String(eventId || "").trim().toLowerCase(), String(ev.id || "").trim().toLowerCase(), String(ev.nama || "").trim().toLowerCase()].filter(Boolean);
-  const existing = apps.find(a =>
+  const matchingRegistrations = apps.filter(a =>
     userKeys.indexOf(String(a.userId || "").trim().toLowerCase()) >= 0 &&
     eventKeys.indexOf(String(a.eventId || "").trim().toLowerCase()) >= 0
   );
+  const existing = matchingRegistrations.find(a =>
+    !["cancelled", "dibatalkan"].includes(String(a.status || "pending").trim().toLowerCase())
+  ) || matchingRegistrations[0];
   if (existing) {
     const oldStatus = String(existing.status || "pending").trim().toLowerCase();
     if (!["cancelled", "dibatalkan"].includes(oldStatus)) return { success: false, message: "Kamu sudah mendaftar ke kegiatan ini." };
@@ -795,7 +798,7 @@ function adminUploadCertificate_(p) {
   if (!eventNevFileMatchesMime_(bytes, mime)) return { success: false, message: "Isi file tidak sesuai dengan format yang dipilih. Unggah file yang valid." };
 
   const props = PropertiesService.getScriptProperties();
-  const folderKey = "EVENTNEV_CERTIFICATES_FOLDER_ID";
+  const folderKey = "EVENTNEV_PRIVATE_CERTIFICATES_FOLDER_ID";
   let folder = null;
   const savedId = props.getProperty(folderKey);
   if (savedId) { try { folder = DriveApp.getFolderById(savedId); } catch (ignore) {} }
