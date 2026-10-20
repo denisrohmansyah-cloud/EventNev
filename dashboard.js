@@ -366,6 +366,9 @@ function renderApplications() {
   document.querySelectorAll("[data-calendar-app-id]").forEach(button => {
     button.addEventListener("click", () => exportEventToCalendarForApplication(button.dataset.calendarAppId));
   });
+  document.querySelectorAll("[data-cancel-app-id]").forEach(button => {
+    button.addEventListener("click", () => cancelMyApplication(button.dataset.cancelAppId));
+  });
 }
 
 function filterMyApplications() {
@@ -430,7 +433,8 @@ window.exportEventToCalendarForApplication = function(applicationId) {
   const summary = eventNevIcsEscape(event.nama || app.namaEvent || "Kegiatan EventNev");
   const description = eventNevIcsEscape(String(event.deskripsi || "") + (event.syarat ? "\nPersyaratan: " + event.syarat : ""));
   const location = eventNevIcsEscape(event.lokasi || "");
-  const stamp = eventNevCalendarUtc({year:2026,month:1,day:1},{hour:9,minute:0},0);
+  const now = new Date();
+  const stamp = now.getUTCFullYear() + String(now.getUTCMonth()+1).padStart(2,"0") + String(now.getUTCDate()).padStart(2,"0") + "T" + String(now.getUTCHours()).padStart(2,"0") + String(now.getUTCMinutes()).padStart(2,"0") + String(now.getUTCSeconds()).padStart(2,"0") + "Z";
   const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//EventNev//Participant Calendar//ID","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT","UID:"+uid,"DTSTAMP:"+stamp,"DTSTART:"+eventNevCalendarUtc(parts,start,0),"DTEND:"+eventNevCalendarUtc(parts,end,endDayOffset),"SUMMARY:"+summary,"DESCRIPTION:"+description,"LOCATION:"+location,"END:VEVENT","END:VCALENDAR",""].join("\r\n");
   const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
   const url = URL.createObjectURL(blob);
@@ -471,7 +475,7 @@ function buildAppCard(app) {
     state.events.some(event => (app.eventId && String(event.id) === String(app.eventId)) ||
       (app.namaEvent && String(event.nama || "").trim().toLowerCase() === String(app.namaEvent).trim().toLowerCase()));
   return '<div class="db-app-card" data-search="' + sanitize(searchable) + '" data-status="' + sanitize(filterStatus) + '"><div class="db-app-icon">📋</div><div class="db-app-info"><h4>' + sanitize(app.namaEvent || app.eventId || "Kegiatan") + '</h4><p>' + sanitize(app.kategori || "") + (app.tanggalDaftar ? " · Daftar: " + formatDate(app.tanggalDaftar) : "") + '</p>' +
-    (canCancel ? '<button type="button" class="db-cancel-application" onclick="cancelMyApplication(\\'' + sanitize(app.id) + '\\')">Batalkan pendaftaran</button>' : "") +
+    (canCancel ? '<button type="button" class="db-cancel-application" data-cancel-app-id="' + sanitize(app.id) + '">Batalkan pendaftaran</button>' : "") +
     (canAddCalendar ? '<button type="button" class="db-cancel-application" data-calendar-app-id="' + sanitize(app.id) + '" style="margin-left:8px;">＋ Simpan ke kalender</button>' : "") +
     '</div><div class="db-app-status"><span class="event-badge ' + info.cls + '">' + info.text + '</span></div>' + timelineHtml + '</div>';
 }
